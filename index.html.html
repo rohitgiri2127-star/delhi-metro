@@ -1,0 +1,1473 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Delhi Metro Route Finder</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F5F0EB;
+  --bg2:#EDE6DC;
+  --bg3:#E2D9CC;
+  --card:#FFFDF9;
+  --border:#D4C8B8;
+  --text:#1A1208;
+  --text-dim:#7A6A52;
+  --red:#C0392B;
+  --red-light:#E74C3C;
+  --red-dark:#962C22;
+  --red-glow:#FF6B5B;
+  --cream:#FFF8F0;
+  --blue-line:#1565C0;
+  --violet-line:#6A0DAD;
+  --pink-line:#E91E8C;
+  --yellow-line:#F6C200;
+  --red-metro:#E53935;
+  --green-line:#148A4E;
+  --magenta-line:#A6267D;
+  --grey-line:#8B8B8B;
+  --airport-line:#F2A900;
+  --radius:14px;
+  --shadow:0 8px 32px rgba(0,0,0,.12);
+}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── ANIMATED BG TRACKS ─── */
+.train-track{
+  position:fixed;top:0;left:0;width:100%;height:100%;
+  pointer-events:none;z-index:0;overflow:hidden;
+}
+.track-line{
+  position:absolute;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(192,57,43,.15),transparent);
+  width:100%;
+}
+.track-line:nth-child(1){top:18%}
+.track-line:nth-child(2){top:52%}
+.track-line:nth-child(3){top:82%}
+.train-dot{
+  position:absolute;width:6px;height:6px;border-radius:50%;
+  background:var(--red);
+  box-shadow:0 0 12px var(--red),0 0 24px rgba(192,57,43,.4);
+  animation:trainMove 8s linear infinite;
+}
+.train-dot:nth-child(4){top:calc(18% - 3px);animation-delay:0s}
+.train-dot:nth-child(5){top:calc(52% - 3px);animation-delay:3s}
+.train-dot:nth-child(6){top:calc(82% - 3px);animation-delay:5.5s}
+@keyframes trainMove{
+  0%{left:-10px;opacity:0}5%{opacity:1}95%{opacity:1}100%{left:calc(100% + 10px);opacity:0}
+}
+
+/* ── HEADER ─── */
+.header{
+  position:relative;z-index:10;
+  background:linear-gradient(135deg,#C0392B 0%,#962C22 60%,#7B241C 100%);
+  box-shadow:0 4px 20px rgba(0,0,0,.2);
+  padding:0 20px;
+}
+.header-inner{
+  max-width:900px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 0;gap:16px;
+}
+.logo-wrap{display:flex;align-items:center;gap:14px}
+.metro-logo{
+  width:64px;height:64px;flex-shrink:0;
+}
+.logo-text-wrap{}
+.logo-title{
+  font-size:1.35rem;font-weight:800;color:#fff;letter-spacing:.01em;line-height:1.1;
+}
+.logo-sub{
+  font-family:'Noto Sans Devanagari',sans-serif;
+  font-size:.78rem;color:rgba(255,255,255,.75);margin-top:2px;
+}
+.lang-wrap{
+  display:flex;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.2);
+  border-radius:999px;padding:3px;gap:2px;flex-shrink:0;
+}
+.lang-btn{
+  border:none;background:transparent;cursor:pointer;
+  padding:6px 14px;border-radius:999px;font-size:.8rem;font-weight:600;
+  color:rgba(255,255,255,.6);transition:all .2s;
+}
+.lang-btn.active{background:#fff;color:var(--red-dark)}
+
+/* ── HEADER RIGHT / MENU ─── */
+.header-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.menu-wrap{position:relative}
+.menu-btn{
+  width:40px;height:40px;border-radius:10px;flex-shrink:0;
+  background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.2);
+  color:#fff;font-size:1.2rem;cursor:pointer;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:background .2s;
+}
+.menu-btn:hover{background:rgba(0,0,0,.35)}
+.menu-dropdown{
+  position:absolute;top:calc(100% + 8px);right:0;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:12px;min-width:230px;
+  box-shadow:0 12px 40px rgba(0,0,0,.2);
+  z-index:300;display:none;overflow:hidden;
+}
+.menu-dropdown.open{display:block}
+.menu-item{
+  display:flex;align-items:center;gap:10px;
+  padding:13px 16px;cursor:pointer;font-size:.88rem;font-weight:600;color:var(--text);
+  transition:background .15s;
+}
+.menu-item:hover{background:var(--bg2)}
+.menu-item .mi-icon{font-size:1.1rem;flex-shrink:0}
+.menu-item .mi-text{display:flex;flex-direction:column;line-height:1.3}
+.menu-item .mi-hi{font-family:'Noto Sans Devanagari',sans-serif;font-size:.7rem;color:var(--text-dim);font-weight:400}
+
+/* ── TICKET INFO MODAL ─── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(20,12,4,.55);
+  z-index:1000;display:none;align-items:center;justify-content:center;padding:16px;
+  backdrop-filter:blur(2px);
+}
+.modal-overlay.open{display:flex}
+.modal-box{
+  background:var(--card);border-radius:18px;max-width:600px;width:100%;
+  max-height:85vh;overflow-y:auto;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+  animation:popIn .3s ease both;
+}
+.modal-header{
+  background:linear-gradient(135deg,#C0392B 0%,#962C22 100%);
+  color:#fff;padding:18px 22px;display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:1;
+}
+.modal-title-wrap .modal-title{font-size:1.08rem;font-weight:800}
+.modal-title-wrap .modal-sub{font-family:'Noto Sans Devanagari',sans-serif;font-size:.78rem;color:rgba(255,255,255,.8);margin-top:2px}
+.modal-close{
+  background:rgba(255,255,255,.15);border:none;color:#fff;width:32px;height:32px;
+  border-radius:50%;cursor:pointer;font-size:1.1rem;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;transition:background .2s;
+}
+.modal-close:hover{background:rgba(255,255,255,.3)}
+.modal-body{padding:20px 22px 24px}
+.ticket-option{
+  display:flex;gap:14px;padding:14px;border:1.5px solid var(--border);
+  border-radius:12px;margin-bottom:12px;background:var(--bg2);
+}
+.ticket-option:last-child{margin-bottom:0}
+.ticket-icon{font-size:1.7rem;flex-shrink:0;line-height:1}
+.ticket-opt-title{font-weight:700;font-size:.92rem;color:var(--text);margin-bottom:3px}
+.ticket-opt-desc{font-size:.82rem;color:var(--text-dim);line-height:1.55}
+.ticket-opt-desc-hi{font-family:'Noto Sans Devanagari',sans-serif;font-size:.78rem;color:var(--text-dim);line-height:1.6;margin-top:4px}
+.ticket-tip{
+  margin-top:14px;padding:12px 14px;border-radius:10px;
+  background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.2);
+  font-size:.8rem;color:var(--text);line-height:1.55;
+}
+.ticket-tip .tt-hi{font-family:'Noto Sans Devanagari',sans-serif;font-size:.76rem;color:var(--text-dim);margin-top:4px}
+
+/* ── HERO ─── */
+.hero{
+  position:relative;z-index:1;
+  text-align:center;
+  padding:40px 20px 28px;
+}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(192,57,43,.1);border:1px solid rgba(192,57,43,.25);
+  border-radius:999px;padding:6px 16px;font-size:.75rem;
+  letter-spacing:.08em;text-transform:uppercase;color:var(--red);
+  margin-bottom:16px;font-weight:700;
+  animation:fadeDown .6s ease both;
+}
+.hero-badge .dot{
+  width:8px;height:8px;border-radius:50%;background:var(--red);
+  animation:pulse 1.5s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+.hero h1{
+  font-size:clamp(1.8rem,4.5vw,2.8rem);font-weight:800;line-height:1.15;
+  color:var(--text);
+  animation:fadeDown .7s .1s ease both;
+}
+.hero h1 span{color:var(--red)}
+.hero-sub{
+  font-family:'Noto Sans Devanagari',sans-serif;
+  font-size:.95rem;color:var(--text-dim);margin-top:8px;
+  animation:fadeDown .7s .2s ease both;
+}
+.line-pills{
+  display:flex;align-items:center;justify-content:center;gap:8px;margin-top:16px;
+  flex-wrap:wrap;animation:fadeDown .7s .3s ease both;
+}
+.line-pill{
+  border-radius:999px;padding:4px 14px;font-size:.75rem;font-weight:700;
+  color:#fff;letter-spacing:.04em;
+}
+.line-pill.blue{background:var(--blue-line)}
+.line-pill.violet{background:var(--violet-line)}
+.line-pill.pink{background:var(--pink-line)}
+.line-pill.yellow{background:var(--yellow-line);color:#1A1208}
+.line-pill.red-metro{background:var(--red-metro)}
+.line-pill.green-line{background:var(--green-line)}
+.line-pill.magenta{background:var(--magenta-line)}
+.line-pill.grey{background:var(--grey-line)}
+.line-pill.airport{background:var(--airport-line);color:#1A1208}
+
+/* ── SEARCH CARD ─── */
+.search-wrap{
+  position:relative;z-index:1;
+  max-width:760px;margin:0 auto 40px;padding:0 16px;
+  animation:fadeUp .7s .3s ease both;
+}
+.search-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:20px;padding:28px;
+  box-shadow:var(--shadow);
+}
+.search-row{
+  display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:end;
+  margin-bottom:18px;
+}
+.field-wrap{display:flex;flex-direction:column;gap:6px}
+.field-label{
+  font-size:.72rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--text-dim);
+  display:flex;align-items:center;gap:6px;
+}
+.field-label .dot-green{width:7px;height:7px;border-radius:50%;background:#27AE60;flex-shrink:0}
+.field-label .dot-red{width:7px;height:7px;border-radius:50%;background:#E74C3C;flex-shrink:0}
+
+/* ── CUSTOM SEARCHABLE SELECT ─── */
+.custom-select-wrap{position:relative}
+.cs-input{
+  width:100%;background:var(--bg2);border:1.5px solid var(--border);
+  border-radius:10px;padding:12px 36px 12px 14px;color:var(--text);font-size:.9rem;
+  font-family:inherit;outline:none;cursor:text;
+  transition:border-color .2s,box-shadow .2s;
+}
+.cs-input:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(192,57,43,.12)}
+.cs-arrow{
+  position:absolute;right:10px;top:50%;transform:translateY(-50%);
+  color:var(--text-dim);font-size:.8rem;pointer-events:none;
+}
+.cs-dropdown{
+  position:absolute;top:calc(100% + 4px);left:0;right:0;
+  background:var(--card);border:1.5px solid var(--border);
+  border-radius:12px;max-height:260px;overflow-y:auto;
+  z-index:200;box-shadow:0 12px 40px rgba(0,0,0,.15);
+  display:none;
+}
+.cs-dropdown.open{display:block}
+.cs-option{
+  padding:10px 14px;cursor:pointer;display:flex;align-items:center;gap:10px;
+  border-bottom:1px solid var(--bg2);transition:background .15s;
+  font-size:.88rem;
+}
+.cs-option:last-child{border-bottom:none}
+.cs-option:hover,.cs-option.highlighted{background:var(--bg2)}
+.cs-option .line-dot{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;
+}
+.cs-option .opt-names{}
+.cs-option .opt-en{font-weight:600;color:var(--text);line-height:1.2}
+.cs-option .opt-hi{font-family:'Noto Sans Devanagari',sans-serif;font-size:.72rem;color:var(--text-dim)}
+.cs-no-results{padding:14px;text-align:center;color:var(--text-dim);font-size:.85rem}
+
+.swap-btn{
+  width:44px;height:44px;border-radius:50%;
+  background:linear-gradient(135deg,var(--red-light),var(--red-dark));
+  border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;transition:transform .3s,box-shadow .2s;
+  box-shadow:0 4px 12px rgba(192,57,43,.35);
+  flex-shrink:0;align-self:flex-end;
+}
+.swap-btn:hover{transform:rotate(180deg);box-shadow:0 6px 20px rgba(192,57,43,.5)}
+
+.find-btn{
+  width:100%;padding:15px;border:none;border-radius:12px;
+  background:linear-gradient(135deg,var(--red-light),var(--red-dark));
+  color:#fff;font-size:1rem;font-weight:700;cursor:pointer;
+  letter-spacing:.03em;transition:transform .15s,box-shadow .2s;
+  box-shadow:0 4px 18px rgba(192,57,43,.35);
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.find-btn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(192,57,43,.45)}
+.find-btn:active{transform:translateY(0)}
+.find-btn .btn-icon{font-size:1.2rem;animation:trainBounce 1.2s ease-in-out infinite}
+@keyframes trainBounce{0%,100%{transform:translateX(0)}50%{transform:translateX(4px)}}
+
+/* ── RESULT AREA ─── */
+.result-wrap{
+  max-width:760px;margin:0 auto 60px;padding:0 16px;
+}
+.info-chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:24px}
+.chip{
+  display:flex;align-items:center;gap:7px;
+  background:var(--card);border:1px solid var(--border);
+  border-radius:999px;padding:8px 16px;font-size:.82rem;font-weight:600;
+  animation:popIn .4s ease both;color:var(--text);
+}
+.chip.red{border-color:rgba(192,57,43,.4);color:var(--red)}
+.chip.green{border-color:rgba(39,174,96,.4);color:#219A52}
+.chip.orange{border-color:rgba(230,126,34,.4);color:#E67E22}
+.chip.gold{border-color:rgba(243,156,18,.4);color:#B7950B}
+
+/* ── INLINE PLATFORM/BOARDING INFO (inside timeline stop) ─── */
+.platform-inline{
+  display:flex;align-items:center;gap:12px;
+  border-radius:10px;border:1.5px solid;
+  padding:9px 12px;margin-top:8px;
+  animation:popIn .4s ease both;
+}
+.pi-num{font-size:1.5rem;font-weight:800;line-height:1;flex-shrink:0}
+.pi-info{flex:1;min-width:0}
+.pi-label{font-size:.64rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-dim)}
+.pi-dir{font-size:.86rem;font-weight:700;color:var(--text);margin-top:2px}
+.pi-dir-hi{font-family:'Noto Sans Devanagari',sans-serif;font-size:.74rem;color:var(--text-dim);margin-top:1px}
+
+/* ── TIMELINE ─── */
+.route-title{
+  font-size:.72rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.1em;color:var(--text-dim);margin-bottom:14px;
+}
+.timeline{position:relative;padding-left:28px}
+.timeline-segment{position:relative;padding-left:0}
+.seg-line{
+  position:absolute;left:11px;top:0;bottom:0;
+  width:3px;border-radius:999px;
+}
+.seg-line.blue-seg{background:linear-gradient(180deg,var(--blue-line),#1976D2)}
+.seg-line.violet-seg{background:linear-gradient(180deg,var(--violet-line),#7B1FA2)}
+.seg-line.pink-seg{background:linear-gradient(180deg,var(--pink-line),#C2185B)}
+.seg-line.yellow-seg{background:linear-gradient(180deg,var(--yellow-line),#F9A825)}
+.seg-line.red-metro-seg{background:linear-gradient(180deg,var(--red-metro),#B71C1C)}
+.seg-line.green-line-seg{background:linear-gradient(180deg,var(--green-line),#0A6630)}
+.seg-line.magenta-seg{background:linear-gradient(180deg,var(--magenta-line),#7B1656)}
+.seg-line.grey-seg{background:linear-gradient(180deg,var(--grey-line),#5E5E5E)}
+.seg-line.airport-seg{background:linear-gradient(180deg,var(--airport-line),#C68400)}
+
+.stop{
+  position:relative;display:flex;align-items:flex-start;
+  gap:14px;padding:8px 0;
+  animation:slideIn .35s ease both;
+}
+.stop-dot{
+  position:absolute;left:-28px;top:13px;
+  width:16px;height:16px;border-radius:50%;flex-shrink:0;
+  background:var(--card);
+  display:flex;align-items:center;justify-content:center;
+  z-index:1;border:2.5px solid;
+}
+.stop-dot.blue-dot{border-color:var(--blue-line)}
+.stop-dot.violet-dot{border-color:var(--violet-line)}
+.stop-dot.pink-dot{border-color:var(--pink-line)}
+.stop-dot.yellow-dot{border-color:var(--yellow-line)}
+.stop-dot.red-metro-dot{border-color:var(--red-metro)}
+.stop-dot.green-line-dot{border-color:var(--green-line)}
+.stop-dot.magenta-dot{border-color:var(--magenta-line)}
+.stop-dot.grey-dot{border-color:var(--grey-line)}
+.stop-dot.airport-dot{border-color:var(--airport-line)}
+
+.stop.first .stop-dot,.stop.last .stop-dot{
+  width:20px;height:20px;left:-30px;top:11px;
+}
+.stop.first.blue-first .stop-dot{background:var(--blue-line);border-color:var(--blue-line)}
+.stop.last.blue-last .stop-dot{background:var(--blue-line);border-color:var(--blue-line)}
+.stop.first.violet-first .stop-dot{background:var(--violet-line);border-color:var(--violet-line)}
+.stop.last.violet-last .stop-dot{background:var(--violet-line);border-color:var(--violet-line)}
+.stop.first.pink-first .stop-dot{background:var(--pink-line);border-color:var(--pink-line)}
+.stop.last.pink-last .stop-dot{background:var(--pink-line);border-color:var(--pink-line)}
+.stop.first.yellow-first .stop-dot{background:var(--yellow-line);border-color:var(--yellow-line)}
+.stop.last.yellow-last .stop-dot{background:var(--yellow-line);border-color:var(--yellow-line)}
+.stop.first.red-metro-first .stop-dot{background:var(--red-metro);border-color:var(--red-metro)}
+.stop.last.red-metro-last .stop-dot{background:var(--red-metro);border-color:var(--red-metro)}
+.stop.first.green-line-first .stop-dot{background:var(--green-line);border-color:var(--green-line)}
+.stop.last.green-line-last .stop-dot{background:var(--green-line);border-color:var(--green-line)}
+.stop.first.magenta-first .stop-dot{background:var(--magenta-line);border-color:var(--magenta-line)}
+.stop.last.magenta-last .stop-dot{background:var(--magenta-line);border-color:var(--magenta-line)}
+.stop.first.grey-first .stop-dot{background:var(--grey-line);border-color:var(--grey-line)}
+.stop.last.grey-last .stop-dot{background:var(--grey-line);border-color:var(--grey-line)}
+.stop.first.airport-first .stop-dot{background:var(--airport-line);border-color:var(--airport-line)}
+.stop.last.airport-last .stop-dot{background:var(--airport-line);border-color:var(--airport-line)}
+
+.stop.interchange .stop-dot{
+  background:#F39C12;border-color:#F39C12;
+  box-shadow:0 0 10px rgba(243,156,18,.5);
+  width:20px;height:20px;left:-30px;top:11px;
+}
+
+.stop-content{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:11px 14px;flex:1;
+}
+.stop.first .stop-content,.stop.last .stop-content{
+  border-color:rgba(192,57,43,.3);background:rgba(192,57,43,.04);
+}
+.stop.interchange .stop-content{
+  border-color:rgba(243,156,18,.4);background:rgba(243,156,18,.04);
+}
+.stop-name{font-size:.93rem;font-weight:600;line-height:1.3;color:var(--text)}
+.stop-hindi{font-family:'Noto Sans Devanagari',sans-serif;font-size:.78rem;color:var(--text-dim);margin-top:2px}
+.stop-badge{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:.65rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.05em;border-radius:999px;padding:2px 8px;margin-top:5px;margin-right:4px;
+}
+.badge-interchange{background:rgba(243,156,18,.15);color:#B7950B;border:1px solid rgba(243,156,18,.3)}
+.badge-terminal{background:rgba(192,57,43,.12);color:var(--red);border:1px solid rgba(192,57,43,.25)}
+.badge-underground{background:rgba(100,100,100,.1);color:#7A6A52;border:1px solid rgba(100,100,100,.2)}
+.badge-line{display:inline-flex;align-items:center;gap:4px;font-size:.65rem;font-weight:700;border-radius:999px;padding:2px 8px;margin-top:5px;margin-right:4px;color:#fff}
+.badge-line.blue-badge{background:var(--blue-line)}
+.badge-line.violet-badge{background:var(--violet-line)}
+.badge-line.pink-badge{background:var(--pink-line)}
+.badge-line.yellow-badge{background:var(--yellow-line);color:#1A1208}
+.badge-line.red-metro-badge{background:var(--red-metro)}
+.badge-line.green-line-badge{background:var(--green-line)}
+.badge-line.magenta-badge{background:var(--magenta-line)}
+.badge-line.grey-badge{background:var(--grey-line)}
+.badge-line.airport-badge{background:var(--airport-line);color:#1A1208}
+
+/* loading & error */
+.loading{display:flex;flex-direction:column;align-items:center;gap:16px;padding:40px;animation:fadeIn .3s ease}
+.loader{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--red);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-box{background:rgba(192,57,43,.06);border:1px solid rgba(192,57,43,.25);border-radius:12px;padding:16px 20px;text-align:center;color:var(--red);font-size:.9rem}
+
+/* ── ANIMATIONS ─── */
+@keyframes fadeDown{from{opacity:0;transform:translateY(-18px)}to{opacity:1;transform:none}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes popIn{from{opacity:0;transform:scale(.93)}to{opacity:1;transform:scale(1)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* ── FOOTER ─── */
+.footer{
+  text-align:center;padding:24px;font-size:.75rem;color:var(--text-dim);
+  border-top:1px solid var(--border);position:relative;z-index:1;
+  background:var(--bg2);
+}
+
+/* ── RESPONSIVE ─── */
+@media(max-width:560px){
+  .search-row{grid-template-columns:1fr;grid-template-rows:auto auto auto}
+  .swap-btn{transform:rotate(90deg);margin:0 auto}
+  .swap-btn:hover{transform:rotate(90deg) scale(1.1)}
+  .header-inner{flex-direction:column;gap:10px;align-items:flex-start}
+  .header-right{align-self:flex-end}
+}
+
+/* scrollbar */
+.cs-dropdown::-webkit-scrollbar{width:5px}
+.cs-dropdown::-webkit-scrollbar-track{background:var(--bg2)}
+.cs-dropdown::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
+
+/* ── METRO MAP ── */
+.map-section{
+  max-width:960px;margin:0 auto 48px;padding:0 16px;
+  position:relative;z-index:1;
+}
+.map-header{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;margin-bottom:16px;
+}
+.map-title-wrap{display:flex;align-items:center;gap:12px}
+.map-icon{font-size:1.4rem}
+.map-title{font-size:1.05rem;font-weight:700;color:var(--text)}
+.map-sub{font-family:'Noto Sans Devanagari',sans-serif;font-size:.78rem;color:var(--text-dim)}
+.map-legend{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.leg-item{display:flex;align-items:center;gap:5px;font-size:.74rem;font-weight:600;color:var(--text-dim)}
+.leg-dot{width:11px;height:11px;border-radius:50%;display:inline-block;flex-shrink:0}
+.map-container{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:18px;padding:16px;
+  box-shadow:var(--shadow);
+  overflow-x:auto;
+  animation:fadeUp .7s .3s ease both;
+}
+#metro-map{min-width:680px;display:block}
+</style>
+</head>
+<body>
+
+<div class="train-track">
+  <div class="track-line"></div><div class="track-line"></div><div class="track-line"></div>
+  <div class="train-dot"></div><div class="train-dot"></div><div class="train-dot"></div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="logo-wrap">
+      <!-- Official Delhi Metro Logo -->
+      <img src="https://latestlogo.com/wp-content/uploads/2025/06/delhi-metro-logo-scaled.png" 
+           alt="Delhi Metro Logo" class="metro-logo" 
+           style="object-fit:contain;border-radius:8px;background:white;padding:3px;box-shadow:0 2px 8px rgba(0,0,0,0.2);"
+           onerror="this.style.display='none'"/>
+      <div class="logo-text-wrap">
+        <div class="logo-title">Delhi Metro</div>
+        <div class="logo-sub">दिल्ली मेट्रो रेल कॉर्पोरेशन</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="lang-wrap">
+        <button class="lang-btn active" onclick="setLang('en')" id="btn-en">EN</button>
+        <button class="lang-btn" onclick="setLang('hi')" id="btn-hi">हिं</button>
+      </div>
+      <div class="menu-wrap">
+        <button class="menu-btn" onclick="toggleMenu()" id="menu-btn" aria-label="Menu">☰</button>
+        <div class="menu-dropdown" id="menu-dropdown">
+          <div class="menu-item" onclick="openTicketModal()">
+            <span class="mi-icon">🎫</span>
+            <span class="mi-text">Ticket kaise kharidein?<span class="mi-hi">टिकट कैसे खरीदें</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TICKET INFO MODAL -->
+<div class="modal-overlay" id="ticket-modal" onclick="closeTicketModalOutside(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title">🎫 How to Buy a Metro Ticket</div>
+        <div class="modal-sub">मेट्रो टिकट कैसे खरीदें</div>
+      </div>
+      <button class="modal-close" onclick="closeTicketModal()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="ticket-option">
+        <div class="ticket-icon">📱</div>
+        <div>
+          <div class="ticket-opt-title">QR Code Ticket (Mobile / UPI)</div>
+          <div class="ticket-opt-desc">Book a paperless QR ticket from the DMRC Momentum app, Whatsapp chatbot, or UPI apps. Scan the QR at the AFC gate to enter and exit — no card needed.</div>
+          <div class="ticket-opt-desc-hi">DMRC Momentum ऐप, Whatsapp या UPI ऐप से QR टिकट बुक करें। प्रवेश और निकास गेट पर QR स्कैन करें — कार्ड की ज़रूरत नहीं।</div>
+        </div>
+      </div>
+
+      <div class="ticket-option">
+        <div class="ticket-icon">💳</div>
+        <div>
+          <div class="ticket-opt-title">Smart Card (NCMC / Travel Card)</div>
+          <div class="ticket-opt-desc">Buy or recharge a rechargeable smart card at the Customer Care counter (security deposit applies). Tap the card on the yellow reader at entry and exit gates — usually gives a 10% fare discount.</div>
+          <div class="ticket-opt-desc-hi">कस्टमर केयर काउंटर से रिचार्जेबल स्मार्ट कार्ड खरीदें या रिचार्ज करें (सिक्योरिटी डिपॉज़िट लगता है)। प्रवेश व निकास गेट पर पीले रीडर पर टैप करें — आमतौर पर 10% की छूट मिलती है।</div>
+        </div>
+      </div>
+
+      <div class="ticket-option">
+        <div class="ticket-icon">🪙</div>
+        <div>
+          <div class="ticket-opt-title">Token (Single Journey)</div>
+          <div class="ticket-opt-desc">Buy a token for a single trip from the Token Vending Machine (TVM) or the Customer Care counter — select your destination station and pay by cash/card/UPI. Tap the token on the entry gate, and drop it in the slot at the exit gate.</div>
+          <div class="ticket-opt-desc-hi">एक बार की यात्रा के लिए टोकन वेंडिंग मशीन (TVM) या कस्टमर केयर काउंटर से टोकन खरीदें — अपना गंतव्य स्टेशन चुनें और कैश/कार्ड/UPI से भुगतान करें। प्रवेश गेट पर टोकन टैप करें और निकास गेट पर स्लॉट में डालें।</div>
+        </div>
+      </div>
+
+      <div class="ticket-tip">
+        💡 Tip: Cash counters can have long queues. The QR ticket (via app/UPI) is fastest and the smart card is best for daily commuters due to the fare discount.
+        <div class="tt-hi">सुझाव: कैश काउंटर पर लाइन लंबी हो सकती है। QR टिकट (ऐप/UPI से) सबसे तेज़ है, और रोज़ाना सफर करने वालों के लिए छूट की वजह से स्मार्ट कार्ड सबसे बेहतर है।</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge"><span class="dot"></span> Multi-Line Route Finder</div>
+  <h1 id="hero-title">Find Your <span>Metro Route</span></h1>
+  <p class="hero-sub" id="hero-sub">अपना सफ़र खोजें • Blue, Violet, Pink, Yellow, Red, Green, Magenta, Grey & Airport Express Lines</p>
+  <div class="line-pills">
+    <span class="line-pill blue">🔵 Blue Line</span>
+    <span class="line-pill violet">🟣 Violet Line</span>
+    <span class="line-pill pink">🩷 Pink Line</span>
+    <span class="line-pill yellow">🟡 Yellow Line</span>
+    <span class="line-pill red-metro">🔴 Red Line</span>
+    <span class="line-pill green-line">🟢 Green Line</span>
+    <span class="line-pill magenta">🟪 Magenta Line</span>
+    <span class="line-pill grey">⚪ Grey Line</span>
+    <span class="line-pill airport">🟨 Airport Express</span>
+  </div>
+</div>
+
+<!-- SEARCH CARD -->
+<div class="search-wrap">
+  <div class="search-card">
+    <div class="search-row">
+      <div class="field-wrap">
+        <div class="field-label"><span class="dot-green"></span><span id="lbl-from">FROM Station</span></div>
+        <div class="custom-select-wrap" id="from-wrap">
+          <input class="cs-input" id="from-input" type="text" placeholder="Search station..." autocomplete="off" readonly>
+          <span class="cs-arrow">▼</span>
+          <div class="cs-dropdown" id="from-dropdown"></div>
+        </div>
+      </div>
+
+      <button class="swap-btn" onclick="swapStations()" title="Swap">⇄</button>
+
+      <div class="field-wrap">
+        <div class="field-label"><span class="dot-red"></span><span id="lbl-to">TO Station</span></div>
+        <div class="custom-select-wrap" id="to-wrap">
+          <input class="cs-input" id="to-input" type="text" placeholder="Search station..." autocomplete="off" readonly>
+          <span class="cs-arrow">▼</span>
+          <div class="cs-dropdown" id="to-dropdown"></div>
+        </div>
+      </div>
+    </div>
+    <button class="find-btn" onclick="findRoute()">
+      <span class="btn-icon">🚇</span>
+      <span id="btn-text">Find Route • रास्ता खोजें</span>
+    </button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div class="result-wrap" id="result-wrap"></div>
+
+<!-- METRO MAP SECTION -->
+<div class="map-section">
+  <div class="map-header">
+    <div class="map-title-wrap">
+      <span class="map-icon">🗺</span>
+      <div>
+        <div class="map-title">Delhi Metro Network Map</div>
+        <div class="map-sub">दिल्ली मेट्रो नेटवर्क मानचित्र</div>
+      </div>
+    </div>
+    <div class="map-legend">
+      <span class="leg-item"><span class="leg-dot" style="background:#1565C0"></span>Blue Line</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#F6C200"></span>Yellow Line</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#E53935"></span>Red Line</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#6A0DAD"></span>Violet Line</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#E91E8C"></span>Pink Line</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#148A4E"></span>Green Line</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#A6267D"></span>Magenta Line</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#8B8B8B"></span>Grey Line</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#F2A900"></span>Airport Express</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#fff;border:2px solid #888"></span>Interchange</span>
+    </div>
+  </div>
+  <div class="map-container" style="padding:0;overflow:hidden;border-radius:18px;">
+    <img src="https://metroeasy.com/wp-content/uploads/2023/05/deli.jpg" 
+         alt="Delhi Metro Network Map" 
+         style="width:100%;display:block;border-radius:18px;"
+         onerror="this.parentElement.innerHTML='<div style=\'padding:40px;text-align:center;color:var(--text-dim)\'>🗺 Metro map load nahi ho saka. Internet connection check karein.</div>'"/>
+  </div>
+</div>
+
+
+<div class="footer">
+  🚇 Delhi Metro Route Finder &nbsp;|&nbsp; Blue • Violet • Pink • Yellow • Red • Green • Magenta • Grey • Airport Express &nbsp;|&nbsp; DMRC
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+//  STATION DATA
+// ══════════════════════════════════════════════════════
+
+const BLUE = [
+  {c:'NECC',en:'Noida Electronic City',  hi:'नोएडा इलेक्ट्रॉनिक सिटी',  seq:1,  t:'elevated',  ix:null,               term:true},
+  {c:'NS62',en:'Noida Sector 62',        hi:'नोएडा सेक्टर 62',           seq:2,  t:'elevated',  ix:null},
+  {c:'NS59',en:'Noida Sector 59',        hi:'नोएडा सेक्टर 59',           seq:3,  t:'elevated',  ix:null},
+  {c:'NS61',en:'Noida Sector 61',        hi:'नोएडा सेक्टर 61',           seq:4,  t:'elevated',  ix:null},
+  {c:'NS52',en:'Noida Sector 52',        hi:'नोएडा सेक्टर 52',           seq:5,  t:'elevated',  ix:'Aqua Line'},
+  {c:'NS34',en:'Noida Sector 34',        hi:'नोएडा सेक्टर 34',           seq:6,  t:'elevated',  ix:null},
+  {c:'NCC', en:'Noida City Centre',      hi:'नोएडा सिटी सेंटर',          seq:7,  t:'elevated',  ix:null},
+  {c:'GC',  en:'Golf Course',            hi:'गोल्फ़ कोर्स',              seq:8,  t:'elevated',  ix:null},
+  {c:'BG',  en:'Botanical Garden',       hi:'बॉटेनिकल गार्डन',           seq:9,  t:'elevated',  ix:'Magenta Line'},
+  {c:'NS18',en:'Noida Sector 18',        hi:'नोएडा सेक्टर 18',           seq:10, t:'elevated',  ix:null},
+  {c:'NS16',en:'Noida Sector 16',        hi:'नोएडा सेक्टर 16',           seq:11, t:'elevated',  ix:null},
+  {c:'NS15',en:'Noida Sector 15',        hi:'नोएडा सेक्टर 15',           seq:12, t:'elevated',  ix:null},
+  {c:'NAN', en:'New Ashok Nagar',        hi:'न्यू अशोक नगर',             seq:13, t:'elevated',  ix:null},
+  {c:'MVE', en:'Mayur Vihar Extension',  hi:'मयूर विहार एक्सटेंशन',      seq:14, t:'elevated',  ix:null},
+  {c:'MV1', en:'Mayur Vihar-I',          hi:'मयूर विहार-I',              seq:15, t:'elevated',  ix:'Pink Line', ixCode:'MV1P'},
+  {c:'AKD', en:'Akshardham',             hi:'अक्षरधाम',                  seq:16, t:'elevated',  ix:null},
+  {c:'YMB', en:'Yamuna Bank',            hi:'यमुना बैंक',                seq:17, t:'at_grade',  ix:'Blue Branch (Vaishali)'},
+  {c:'IDPT',en:'Indraprastha',           hi:'इंद्रप्रस्थ',               seq:18, t:'elevated',  ix:null},
+  {c:'SC',  en:'Supreme Court',          hi:'सुप्रीम कोर्ट',             seq:19, t:'elevated',  ix:null},
+  {c:'MH',  en:'Mandi House',            hi:'मण्डी हाउस',                seq:20, t:'underground',ix:'Violet Line', ixCode:'MHV'},
+  {c:'BKR', en:'Barakhamba Road',        hi:'बाराखम्बा रोड़',             seq:21, t:'underground',ix:null},
+  {c:'RC',  en:'Rajiv Chowk',            hi:'राजीव चौक',                 seq:22, t:'underground',ix:'Yellow Line'},
+  {c:'RKA', en:'Ramakrishna Ashram Marg',hi:'रामकृष्ण आश्रम मार्ग',     seq:23, t:'elevated',  ix:null},
+  {c:'JHW', en:'Jhandewalan',            hi:'झंडेवालान',                 seq:24, t:'elevated',  ix:null},
+  {c:'KB',  en:'Karol Bagh',             hi:'क़रोल बाग़',                seq:25, t:'elevated',  ix:null},
+  {c:'RP',  en:'Rajendra Place',         hi:'राजेंद्र प्लेस',            seq:26, t:'elevated',  ix:null},
+  {c:'PN',  en:'Patel Nagar',            hi:'पटेल नगर',                  seq:27, t:'elevated',  ix:null},
+  {c:'SHP', en:'Shadipur',               hi:'शादीपुर',                   seq:28, t:'elevated',  ix:null},
+  {c:'KN',  en:'Kirti Nagar',            hi:'कीर्ति नगर',                seq:29, t:'elevated',  ix:'Green Line'},
+  {c:'MON', en:'Moti Nagar',             hi:'मोती नगर',                  seq:30, t:'elevated',  ix:null},
+  {c:'RMN', en:'Ramesh Nagar',           hi:'रमेश नगर',                  seq:31, t:'elevated',  ix:null},
+  {c:'RJG', en:'Rajouri Garden',         hi:'राजौरी गार्डन',             seq:32, t:'elevated',  ix:'Pink Line', ixCode:'RJGP'},
+  {c:'TGN', en:'Tagore Garden',          hi:'टैगोर गार्डन',              seq:33, t:'elevated',  ix:null},
+  {c:'SBN', en:'Subhash Nagar',          hi:'सुभाष नगर',                 seq:34, t:'elevated',  ix:null},
+  {c:'TLN', en:'Tilak Nagar',            hi:'तिलक नगर',                  seq:35, t:'elevated',  ix:null},
+  {c:'JKE', en:'Janakpuri East',         hi:'जनकपुरी पूर्व',             seq:36, t:'elevated',  ix:null},
+  {c:'JKW', en:'Janakpuri West',         hi:'जनकपुरी पश्चिम',            seq:37, t:'elevated',  ix:'Magenta Line'},
+  {c:'UNE', en:'Uttam Nagar East',       hi:'उत्तम नगर पूर्व',           seq:38, t:'elevated',  ix:null},
+  {c:'UNW', en:'Uttam Nagar West',       hi:'उत्तम नगर पश्चिम',          seq:39, t:'elevated',  ix:null},
+  {c:'NWD', en:'Nawada',                 hi:'नवादा',                     seq:40, t:'elevated',  ix:null},
+  {c:'DWM', en:'Dwarka Mor',             hi:'द्वारका मोड़',               seq:41, t:'elevated',  ix:null},
+  {c:'DW',  en:'Dwarka',                 hi:'द्वारका',                   seq:42, t:'elevated',  ix:'Grey Line'},
+  {c:'DW14',en:'Dwarka Sector 14',       hi:'द्वारका सेक्टर 14',         seq:43, t:'elevated',  ix:null},
+  {c:'DW13',en:'Dwarka Sector 13',       hi:'द्वारका सेक्टर 13',         seq:44, t:'elevated',  ix:null},
+  {c:'DW12',en:'Dwarka Sector 12',       hi:'द्वारका सेक्टर 12',         seq:45, t:'elevated',  ix:null},
+  {c:'DW11',en:'Dwarka Sector 11',       hi:'द्वारका सेक्टर 11',         seq:46, t:'elevated',  ix:null},
+  {c:'DW10',en:'Dwarka Sector 10',       hi:'द्वारका सेक्टर 10',         seq:47, t:'elevated',  ix:null},
+  {c:'DW21',en:'Dwarka Sector 21',       hi:'द्वारका सेक्टर 21',         seq:48, t:'elevated',  ix:'Airport Express', term:true},
+  // Vaishali branch (from Yamuna Bank)
+  {c:'LXMN',en:'Laxmi Nagar',           hi:'लक्ष्मी नगर',               seq:17.1,t:'elevated', ix:null, branch:'vaishali'},
+  {c:'NZB', en:'Nirman Vihar',           hi:'निर्माण विहार',              seq:17.2,t:'elevated', ix:null, branch:'vaishali'},
+  {c:'PRE', en:'Preet Vihar',            hi:'प्रीत विहार',               seq:17.3,t:'elevated', ix:null, branch:'vaishali'},
+  {c:'KBH', en:'Karkarduma',             hi:'कड़कड़डूमा',                 seq:17.4,t:'elevated', ix:null, branch:'vaishali'},
+  {c:'KBC', en:'Karkarduma Court',       hi:'कड़कड़डूमा कोर्ट',           seq:17.5,t:'elevated', ix:null, branch:'vaishali'},
+  {c:'ANJ', en:'Anand Vihar ISBT',       hi:'आनंद विहार ISBT',            seq:17.6,t:'elevated', ix:'Pink Line, Green Line'},
+  {c:'KSPB',en:'Kaushambi',              hi:'कौशाम्बी',                  seq:17.7,t:'elevated', ix:null, branch:'vaishali'},
+  {c:'VAI', en:'Vaishali',               hi:'वैशाली',                    seq:17.8,t:'elevated', ix:null, branch:'vaishali', term:true},
+];
+
+const VIOLET = [
+  {c:'KASB',en:'Kashmere Gate',          hi:'कश्मीरी गेट',               seq:1,  t:'underground',ix:'Yellow Line, Red Line', term:true, ixCode:'KASB_Y'},
+  {c:'LRB', en:'Lal Quila',              hi:'लाल क़िला',                 seq:2,  t:'underground',ix:null},
+  {c:'JMJ', en:'Jama Masjid',            hi:'जामा मस्जिद',               seq:3,  t:'underground',ix:null},
+  {c:'DG',  en:'Delhi Gate',             hi:'दिल्ली गेट',                seq:4,  t:'underground',ix:null},
+  {c:'ITO', en:'ITO',                    hi:'आई.टी.ओ.',                  seq:5,  t:'underground',ix:null},
+  {c:'MHV', en:'Mandi House',            hi:'मण्डी हाउस',                seq:6,  t:'underground',ix:'Blue Line', ixCode:'MH'},
+  {c:'KPN', en:'Khan Market',            hi:'ख़ान मार्केट',               seq:7,  t:'underground',ix:null},
+  {c:'JLN', en:'JLN Stadium',            hi:'जे.एल.एन. स्टेडियम',        seq:8,  t:'underground',ix:null},
+  {c:'JOR', en:'Jangpura',               hi:'जंगपुरा',                   seq:9,  t:'underground',ix:null},
+  {c:'LJP', en:'Lajpat Nagar',           hi:'लाजपत नगर',                 seq:10, t:'elevated',   ix:'Pink Line', ixCode:'LJPP'},
+  {c:'MHP', en:'Moolchand',              hi:'मूलचंद',                    seq:11, t:'elevated',   ix:null},
+  {c:'KAL', en:'Kailash Colony',         hi:'कैलाश कॉलोनी',              seq:12, t:'elevated',   ix:null},
+  {c:'NKP', en:'Nehru Place',            hi:'नेहरू प्लेस',               seq:13, t:'elevated',   ix:null},
+  {c:'KGS', en:'Kalkaji Mandir',         hi:'कालकाजी मंदिर',             seq:14, t:'elevated',   ix:'Pink Line', ixCode:'KGSP'},
+  {c:'GTK', en:'Govind Puri',            hi:'गोविंद पुरी',               seq:15, t:'elevated',   ix:null},
+  {c:'HKP', en:'Harkesh Nagar Okhla',    hi:'हरकेश नगर ओखला',            seq:16, t:'elevated',   ix:null},
+  {c:'JKP', en:'Jasola Apollo',          hi:'जसोला अपोलो',               seq:17, t:'elevated',   ix:null},
+  {c:'SNK', en:'Sarita Vihar',           hi:'सरिता विहार',               seq:18, t:'elevated',   ix:null},
+  {c:'MRL', en:'Mohan Estate',           hi:'मोहन एस्टेट',               seq:19, t:'elevated',   ix:null},
+  {c:'TKL', en:'Tughlakabad',            hi:'तुग़लक़ाबाद',               seq:20, t:'elevated',   ix:null},
+  {c:'BSB', en:'Badarpur Border',        hi:'बदरपुर बॉर्डर',             seq:21, t:'elevated',   ix:null},
+  {c:'SELN',en:'Sarai',                  hi:'सराय',                      seq:22, t:'elevated',   ix:null},
+  {c:'NHPC',en:'NHPC Chowk',             hi:'एन.एच.पी.सी. चौक',          seq:23, t:'elevated',   ix:null},
+  {c:'MWL', en:'Mewala Maharajpur',      hi:'मेवाला महाराजपुर',           seq:24, t:'elevated',   ix:null},
+  {c:'SKV', en:'Sector 28 Faridabad',    hi:'सेक्टर 28 फ़रीदाबाद',        seq:25, t:'elevated',   ix:null},
+  {c:'BFBD',en:'Badkhal Mor',            hi:'बड़खल मोड़',                 seq:26, t:'elevated',   ix:null},
+  {c:'OLC', en:'Old Faridabad',          hi:'पुराना फ़रीदाबाद',           seq:27, t:'elevated',   ix:null},
+  {c:'NHRK',en:'Neelam Chowk Ajronda',  hi:'नीलम चौक अजरौंदा',          seq:28, t:'elevated',   ix:null},
+  {c:'BKG', en:'Bata Chowk',             hi:'बाटा चौक',                  seq:29, t:'elevated',   ix:null},
+  {c:'EBP', en:'Escorts Mujesar',        hi:'एस्कॉर्ट्स मुजेसर',         seq:30, t:'elevated',   ix:null, term:true},
+];
+
+const PINK = [
+  {c:'MJP', en:'Majlis Park',            hi:'मजलिस पार्क',               seq:1,  t:'elevated',   ix:'Green Line', term:true},
+  {c:'AZP', en:'Azadpur',                hi:'आज़ादपुर',                  seq:2,  t:'elevated',   ix:'Yellow Line'},
+  {c:'SHL', en:'Shalimar Bagh',          hi:'शालीमार बाग़',              seq:3,  t:'elevated',   ix:null},
+  {c:'NBG', en:'Netaji Subhash Place',   hi:'नेताजी सुभाष प्लेस',        seq:4,  t:'elevated',   ix:'Red Line'},
+  {c:'SHK', en:'Shakurpur',              hi:'शकूरपुर',                   seq:5,  t:'elevated',   ix:null},
+  {c:'PSN', en:'Punjabi Bagh West',      hi:'पंजाबी बाग़ वेस्ट',         seq:6,  t:'elevated',   ix:null},
+  {c:'EAF', en:'ESI Hospital',           hi:'ई.एस.आई. अस्पताल',          seq:7,  t:'elevated',   ix:null},
+  {c:'RJGP',en:'Rajouri Garden',         hi:'राजौरी गार्डन',             seq:8,  t:'elevated',   ix:'Blue Line', ixCode:'RJG'},
+  {c:'MMB', en:'Mayapuri',               hi:'मायापुरी',                  seq:9,  t:'elevated',   ix:null},
+  {c:'NDA', en:'Naraina Vihar',          hi:'नारायणा विहार',             seq:10, t:'elevated',   ix:null},
+  {c:'DIG', en:'Delhi Cantt',            hi:'दिल्ली कैंट',               seq:11, t:'elevated',   ix:null},
+  {c:'SHD', en:'Shankar Vihar',          hi:'शंकर विहार',                seq:12, t:'elevated',   ix:null},
+  {c:'VSP', en:'Vasant Vihar',           hi:'वसंत विहार',                seq:13, t:'elevated',   ix:null},
+  {c:'MNG', en:'Munirka',                hi:'मुनिरका',                   seq:14, t:'elevated',   ix:null},
+  {c:'RKP', en:'R.K. Puram',             hi:'आर.के. पुरम',               seq:15, t:'elevated',   ix:null},
+  {c:'INA', en:'INA',                    hi:'आई.एन.ए.',                  seq:16, t:'elevated',   ix:'Yellow Line'},
+  {c:'AIIM',en:'AIIMS',                  hi:'एम्स',                      seq:17, t:'elevated',   ix:null},
+  {c:'GBN', en:'Hauz Khas',              hi:'हौज़ ख़ास',                 seq:18, t:'elevated',   ix:'Yellow Line'},
+  {c:'PALM',en:'Panchsheel Park',        hi:'पंचशील पार्क',              seq:19, t:'elevated',   ix:null},
+  {c:'CHT', en:'Chirag Delhi',           hi:'चिराग दिल्ली',              seq:20, t:'elevated',   ix:null},
+  {c:'GHP', en:'Greater Kailash',        hi:'ग्रेटर कैलाश',             seq:21, t:'elevated',   ix:null},
+  {c:'NWR', en:'Nehru Enclave',          hi:'नेहरू एनक्लेव',             seq:22, t:'elevated',   ix:null},
+  {c:'KGSP',en:'Kalkaji Mandir',         hi:'कालकाजी मंदिर',             seq:23, t:'elevated',   ix:'Violet Line', ixCode:'KGS'},
+  {c:'OGKH',en:'Okhla NSIC',             hi:'ओखला एन.एस.आई.सी.',         seq:24, t:'elevated',   ix:null},
+  {c:'SUKH',en:'Sukhdev Vihar',          hi:'सुखदेव विहार',              seq:25, t:'elevated',   ix:null},
+  {c:'OBJ', en:'Okhla Bird Sanctuary',   hi:'ओखला पक्षी विहार',          seq:26, t:'elevated',   ix:null},
+  {c:'JNS', en:'Jasola Vihar Shaheen Bagh',hi:'जसोला विहार शाहीन बाग़',  seq:27, t:'elevated',   ix:null},
+  {c:'KAB', en:'Kalindi Kunj',           hi:'कालिंदी कुंज',              seq:28, t:'elevated',   ix:null},
+  {c:'JKPK',en:'Jasola Vihar',           hi:'जसोला विहार',               seq:29, t:'elevated',   ix:null},
+  {c:'SHVB',en:'Sarita Vihar',           hi:'सरिता विहार',               seq:30, t:'elevated',   ix:null},
+  {c:'MV1P',en:'Mayur Vihar-I',          hi:'मयूर विहार-I',              seq:31, t:'elevated',   ix:'Blue Line', ixCode:'MV1'},
+  {c:'MVPC',en:'Mayur Vihar Pocket-I',   hi:'मयूर विहार पॉकेट-I',        seq:32, t:'elevated',   ix:null},
+  {c:'TJPK',en:'Trilokpuri Sanjay Lake', hi:'त्रिलोकपुरी संजय झील',      seq:33, t:'elevated',   ix:null},
+  {c:'VSN', en:'Vinod Nagar East',       hi:'विनोद नगर ईस्ट',            seq:34, t:'elevated',   ix:null},
+  {c:'IPEX',en:'IP Extension',           hi:'आई.पी. एक्सटेंशन',          seq:35, t:'elevated',   ix:null},
+  {c:'ANVA',en:'Anand Vihar',            hi:'आनंद विहार',                seq:36, t:'elevated',   ix:'Blue Line, Green Line'},
+  {c:'KRND',en:'Karkarduma',             hi:'कड़कड़डूमा',                 seq:37, t:'elevated',   ix:null},
+  {c:'KRDC',en:'Karkarduma Court',       hi:'कड़कड़डूमा कोर्ट',           seq:38, t:'elevated',   ix:null},
+  {c:'LJPP',en:'Lajpat Nagar',           hi:'लाजपत नगर',                 seq:39, t:'elevated',   ix:'Violet Line', ixCode:'LJP'},
+  {c:'MOOL',en:'Moolchand',              hi:'मूलचंद',                    seq:40, t:'elevated',   ix:null},
+  {c:'SVVR',en:'Shiv Vihar',             hi:'शिव विहार',                 seq:58, t:'elevated',   ix:null, term:true},
+];
+
+const YELLOW = [
+  {c:'SMPR',en:'Samaypur Badli',         hi:'समयपुर बादली',              seq:1,  t:'elevated',   ix:null, term:true},
+  {c:'ROHK',en:'Rohini Sector 18-19',    hi:'रोहिणी सेक्टर 18-19',       seq:2,  t:'elevated',   ix:null},
+  {c:'HADR',en:'Haiderpur Badli Mor',    hi:'हैदरपुर बादली मोड़',         seq:3,  t:'elevated',   ix:null},
+  {c:'JGPR',en:'Jahangirpuri',           hi:'जहाँगीरपुरी',               seq:4,  t:'elevated',   ix:null},
+  {c:'ADRS',en:'Adarsh Nagar',           hi:'आदर्श नगर',                 seq:5,  t:'elevated',   ix:null},
+  {c:'AZDY',en:'Azadpur',               hi:'आज़ादपुर',                  seq:6,  t:'elevated',   ix:'Pink Line', ixCode:'AZP'},
+  {c:'MODN',en:'Model Town',             hi:'मॉडल टाउन',                 seq:7,  t:'elevated',   ix:null},
+  {c:'GTKR',en:'GTB Nagar',              hi:'जी.टी.बी. नगर',             seq:8,  t:'elevated',   ix:null},
+  {c:'VJK', en:'Vishwavidyalaya',        hi:'विश्वविद्यालय',             seq:9,  t:'elevated',   ix:null},
+  {c:'CVLP',en:'Civil Lines',            hi:'सिविल लाइन्स',              seq:10, t:'underground',ix:null},
+  {c:'KASY',en:'Kashmere Gate',          hi:'कश्मीरी गेट',               seq:11, t:'underground',ix:'Violet Line, Red Line', ixCode:'KASB'},
+  {c:'CHDP',en:'Chandni Chowk',          hi:'चाँदनी चौक',                seq:12, t:'underground',ix:null},
+  {c:'CNP', en:'Chawri Bazar',           hi:'चावड़ी बाज़ार',              seq:13, t:'underground',ix:null},
+  {c:'NGDL',en:'New Delhi',              hi:'नई दिल्ली',                  seq:14, t:'underground',ix:'Airport Express, Orange Line'},
+  {c:'RCY', en:'Rajiv Chowk',            hi:'राजीव चौक',                 seq:15, t:'underground',ix:'Blue Line', ixCode:'RC'},
+  {c:'PKLN',en:'Patel Chowk',            hi:'पटेल चौक',                  seq:16, t:'underground',ix:null},
+  {c:'CGPL',en:'Central Secretariat',    hi:'केंद्रीय सचिवालय',          seq:17, t:'underground',ix:'Violet Line (planned)'},
+  {c:'UDAT',en:'Udyog Bhawan',           hi:'उद्योग भवन',                seq:18, t:'underground',ix:null},
+  {c:'INAY',en:'INA',                    hi:'आई.एन.ए.',                  seq:19, t:'elevated',   ix:'Pink Line', ixCode:'INA'},
+  {c:'AIIY',en:'AIIMS',                  hi:'एम्स',                      seq:20, t:'elevated',   ix:null},
+  {c:'GBNX',en:'Hauz Khas',              hi:'हौज़ ख़ास',                 seq:21, t:'elevated',   ix:'Pink Line', ixCode:'GBN'},
+  {c:'MLVR',en:'Malviya Nagar',          hi:'मालवीय नगर',                seq:22, t:'elevated',   ix:null},
+  {c:'SKET',en:'Saket',                  hi:'साकेत',                     seq:23, t:'elevated',   ix:null},
+  {c:'QTBM',en:'Qutab Minar',            hi:'क़ुतुब मीनार',              seq:24, t:'elevated',   ix:null},
+  {c:'CHTN',en:'Chhattarpur',            hi:'छतरपुर',                    seq:25, t:'elevated',   ix:null},
+  {c:'SRDK',en:'Sultanpur',              hi:'सुल्तानपुर',                seq:26, t:'elevated',   ix:null},
+  {c:'GRGN',en:'Ghitorni',               hi:'घिटोरनी',                   seq:27, t:'elevated',   ix:null},
+  {c:'ARJN',en:'Arjangarh',              hi:'अर्जनगढ़',                  seq:28, t:'elevated',   ix:null},
+  {c:'GUDG',en:'Guru Dronacharya',       hi:'गुरु द्रोणाचार्य',          seq:29, t:'elevated',   ix:null},
+  {c:'SIRH',en:'Sikandarpur',            hi:'सिकंदरपुर',                 seq:30, t:'elevated',   ix:null},
+  {c:'MGGN',en:'MG Road',                hi:'एम.जी. रोड',                seq:31, t:'elevated',   ix:null},
+  {c:'IFFG',en:'IFFCO Chowk',            hi:'इफ्को चौक',                 seq:32, t:'elevated',   ix:null},
+  {c:'HDOG',en:'Huda City Centre',       hi:'हुडा सिटी सेंटर',           seq:33, t:'elevated',   ix:null, term:true},
+];
+
+const RED = [
+  {c:'DILM',en:'Dilshad Garden',         hi:'दिलशाद गार्डन',             seq:1,  t:'elevated',   ix:null, term:true},
+  {c:'SHRJ',en:'Jhilmil',                hi:'झिलमिल',                    seq:2,  t:'elevated',   ix:null},
+  {c:'MNDP',en:'Mansarovar Park',        hi:'मानसरोवर पार्क',            seq:3,  t:'elevated',   ix:null},
+  {c:'SDGR',en:'Shahdara',               hi:'शाहदरा',                    seq:4,  t:'elevated',   ix:null},
+  {c:'WELC',en:'Welcome',                hi:'वेलकम',                     seq:5,  t:'elevated',   ix:'Pink Line'},
+  {c:'SECP',en:'Seelampur',              hi:'सीलमपुर',                   seq:6,  t:'elevated',   ix:null},
+  {c:'SHST',en:'Shastri Park',           hi:'शास्त्री पार्क',            seq:7,  t:'elevated',   ix:null},
+  {c:'KASR',en:'Kashmere Gate',          hi:'कश्मीरी गेट',               seq:8,  t:'underground',ix:'Yellow Line, Violet Line', ixCode:'KASY', term:true},
+  // extension toward Rithala
+  {c:'TKHD',en:'Tis Hazari',             hi:'तीस हज़ारी',                seq:9,  t:'elevated',   ix:null},
+  {c:'PULB',en:'Pratap Nagar',           hi:'प्रताप नगर',                seq:10, t:'elevated',   ix:null},
+  {c:'EWRN',en:'Ewari',                  hi:'एवारी',                     seq:11, t:'elevated',   ix:null},
+  {c:'INDER',en:'Inderlok',              hi:'इंदरलोक',                   seq:12, t:'elevated',   ix:'Green Line'},
+  {c:'KANHR',en:'Kanhaiya Nagar',        hi:'कन्हैया नगर',               seq:13, t:'elevated',   ix:null},
+  {c:'KNR', en:'Keshav Puram',           hi:'केशव पुरम',                 seq:14, t:'elevated',   ix:null},
+  {c:'NETPR',en:'Netaji Subhash Place',  hi:'नेताजी सुभाष प्लेस',        seq:15, t:'elevated',   ix:'Pink Line', ixCode:'NBG'},
+  {c:'KOHAT',en:'Kohat Enclave',         hi:'कोहाट एंक्लेव',             seq:16, t:'elevated',   ix:null},
+  {c:'PITAM',en:'Pitampura',             hi:'पीतमपुरा',                  seq:17, t:'elevated',   ix:null},
+  {c:'ROHSR',en:'Rohini East',           hi:'रोहिणी ईस्ट',               seq:18, t:'elevated',   ix:null},
+  {c:'ROHWR',en:'Rohini West',           hi:'रोहिणी वेस्ट',              seq:19, t:'elevated',   ix:null},
+  {c:'RITHL',en:'Rithala',               hi:'रिठाला',                    seq:20, t:'elevated',   ix:null, term:true},
+];
+
+const GREEN = [
+  // Main line: Inderlok → Brigadier Hoshiyar Singh
+  {c:'INDRG',en:'Inderlok',              hi:'इंदरलोक',                   seq:1,  t:'elevated',   ix:'Red Line', ixCode:'INDER', term:true},
+  {c:'ASHKP',en:'Ashok Park Main',       hi:'अशोक पार्क मेन',            seq:2,  t:'elevated',   ix:'Green Branch', ixCode:'ASHKB'},
+  {c:'SATGR',en:'Satguru Ram Singh Marg',hi:'सतगुरु राम सिंह मार्ग',     seq:3,  t:'elevated',   ix:null},
+  {c:'KTNRG',en:'Kirti Nagar',           hi:'कीर्ति नगर',                seq:4,  t:'at_grade',   ix:'Blue Line', ixCode:'KN', term:true},
+  // Continue main line from Ashok Park
+  {c:'SHJPR',en:'Shivaji Park',          hi:'शिवाजी पार्क',              seq:5,  t:'elevated',   ix:null},
+  {c:'MADSB',en:'Madipur',               hi:'मादीपुर',                   seq:6,  t:'elevated',   ix:null},
+  {c:'PBGWG',en:'Punjabi Bagh West',     hi:'पंजाबी बाग़ वेस्ट',         seq:7,  t:'elevated',   ix:'Pink Line', ixCode:'PSN'},
+  {c:'ESWRG',en:'ESI Hospital',          hi:'ई.एस.आई. अस्पताल',          seq:8,  t:'elevated',   ix:null},
+  {c:'PRGHI',en:'Peeragarhi',            hi:'पीरागढ़ी',                  seq:9,  t:'elevated',   ix:null},
+  {c:'UDYNV',en:'Udyog Nagar',           hi:'उद्योग नगर',                seq:10, t:'elevated',   ix:null},
+  {c:'SULTN',en:'Surajmal Stadium',      hi:'सुरजमल स्टेडियम',           seq:11, t:'elevated',   ix:null},
+  {c:'NANGL',en:'Nangloi',               hi:'नांगलोई',                   seq:12, t:'elevated',   ix:null},
+  {c:'NANJS',en:'Nangloi Railway Station',hi:'नांगलोई रेलवे स्टेशन',     seq:13, t:'elevated',   ix:null},
+  {c:'RAJDH',en:'Rajdhani Park',         hi:'राजधानी पार्क',             seq:14, t:'elevated',   ix:null},
+  {c:'MUNDG',en:'Mundka',                hi:'मुंडका',                    seq:15, t:'elevated',   ix:null},
+  {c:'MUNIN',en:'Mundka Industrial Area',hi:'मुंडका इंडस्ट्रियल एरिया',  seq:16, t:'elevated',   ix:null},
+  {c:'GHEVR',en:'Ghevra',                hi:'घेवड़ा',                    seq:17, t:'elevated',   ix:null},
+  {c:'TIKRB',en:'Tikri Kalan',           hi:'तिकरी कलां',                seq:18, t:'elevated',   ix:null},
+  {c:'TIKRK',en:'Tikri Border',          hi:'तिकरी बॉर्डर',              seq:19, t:'elevated',   ix:null},
+  {c:'PANCH',en:'Pandit Shree Ram Sharma',hi:'पंडित श्री राम शर्मा',     seq:20, t:'elevated',   ix:null},
+  {c:'BAHMU',en:'Bahadurgarh City',      hi:'बहादुरगढ़ सिटी',             seq:21, t:'elevated',   ix:null},
+  {c:'BRIGP',en:'Brigadier Hoshiyar Singh',hi:'ब्रिगेडियर होशियार सिंह', seq:22, t:'elevated',   ix:null, term:true},
+];
+
+const MAGENTA = [
+  {c:'MGJW', en:'Janakpuri West',        hi:'जनकपुरी पश्चिम',            seq:1,  t:'underground',ix:'Blue Line', ixCode:'JKW', term:true},
+  {c:'MGDM', en:'Dabri Mor-Janakpuri South',hi:'दाबड़ी मोड़-जनकपुरी साउथ', seq:2,  t:'elevated',   ix:null},
+  {c:'MGDP', en:'Dashrath Puri',         hi:'दशरथ पुरी',                 seq:3,  t:'elevated',   ix:null},
+  {c:'MGPLM',en:'Palam',                 hi:'पालम',                      seq:4,  t:'elevated',   ix:null},
+  {c:'MGSDR',en:'Sadar Bazaar Cantonment',hi:'सदर बाज़ार छावनी',          seq:5,  t:'elevated',   ix:null},
+  {c:'MGT1', en:'Terminal 1 IGI Airport',hi:'टर्मिनल 1 आईजीआई एयरपोर्ट',  seq:6,  t:'underground',ix:null},
+  {c:'MGSV', en:'Shankar Vihar',         hi:'शंकर विहार',                seq:7,  t:'elevated',   ix:null},
+  {c:'MGVV', en:'Vasant Vihar',          hi:'वसंत विहार',                seq:8,  t:'underground',ix:null},
+  {c:'MGMUN',en:'Munirka',               hi:'मुनिरका',                   seq:9,  t:'elevated',   ix:null},
+  {c:'MGRKP',en:'R.K. Puram',            hi:'आर.के. पुरम',               seq:10, t:'elevated',   ix:null},
+  {c:'MGIIT',en:'IIT Delhi',             hi:'आई.आई.टी. दिल्ली',          seq:11, t:'underground',ix:null},
+  {c:'MGHK', en:'Hauz Khas',             hi:'हौज़ ख़ास',                 seq:12, t:'underground',ix:'Yellow Line, Pink Line', ixCode:'GBN'},
+  {c:'MGPSP',en:'Panchsheel Park',       hi:'पंचशील पार्क',              seq:13, t:'underground',ix:null},
+  {c:'MGCD', en:'Chirag Delhi',          hi:'चिराग दिल्ली',              seq:14, t:'underground',ix:null},
+  {c:'MGGK', en:'Greater Kailash',       hi:'ग्रेटर कैलाश',             seq:15, t:'underground',ix:null},
+  {c:'MGNE', en:'Nehru Enclave',         hi:'नेहरू एनक्लेव',             seq:16, t:'underground',ix:null},
+  {c:'MGKM', en:'Kalkaji Mandir',        hi:'कालकाजी मंदिर',             seq:17, t:'elevated',   ix:'Violet Line, Pink Line', ixCode:'KGS'},
+  {c:'MGONS',en:'Okhla NSIC',            hi:'ओखला एन.एस.आई.सी.',         seq:18, t:'elevated',   ix:null},
+  {c:'MGSDV',en:'Sukhdev Vihar',         hi:'सुखदेव विहार',              seq:19, t:'elevated',   ix:null},
+  {c:'MGJMI',en:'Jamia Millia Islamia',  hi:'जामिया मिलिया इस्लामिया',    seq:20, t:'elevated',   ix:null},
+  {c:'MGOV', en:'Okhla Vihar',           hi:'ओखला विहार',                seq:21, t:'elevated',   ix:null},
+  {c:'MGJVS',en:'Jasola Vihar Shaheen Bagh',hi:'जसोला विहार शाहीन बाग़', seq:22, t:'elevated',   ix:'Pink Line'},
+  {c:'MGKK', en:'Kalindi Kunj',          hi:'कालिंदी कुंज',              seq:23, t:'elevated',   ix:null},
+  {c:'MGOBS',en:'Okhla Bird Sanctuary',  hi:'ओखला पक्षी विहार',          seq:24, t:'elevated',   ix:'Pink Line'},
+  {c:'MGBG', en:'Botanical Garden',      hi:'बॉटेनिकल गार्डन',           seq:25, t:'elevated',   ix:'Blue Line', ixCode:'BG', term:true},
+];
+
+const GREY = [
+  {c:'GRDW', en:'Dwarka',                hi:'द्वारका',                   seq:1,  t:'elevated',   ix:'Blue Line', ixCode:'DW', term:true},
+  {c:'GRNG', en:'Nangli',                hi:'नांगली',                    seq:2,  t:'elevated',   ix:null},
+  {c:'GRNF', en:'Najafgarh',             hi:'नजफ़गढ़',                    seq:3,  t:'elevated',   ix:null, term:true},
+];
+
+const AIRPORT = [
+  {c:'APNGDL',en:'New Delhi',            hi:'नई दिल्ली',                  seq:1,  t:'underground',ix:'Yellow Line', ixCode:'NGDL', term:true},
+  {c:'APSS',  en:'Shivaji Stadium',      hi:'शिवाजी स्टेडियम',           seq:2,  t:'underground',ix:null},
+  {c:'APDK',  en:'Dhaula Kuan',          hi:'धौला कुआँ',                  seq:3,  t:'elevated',   ix:null},
+  {c:'APDA',  en:'Delhi Aerocity',       hi:'दिल्ली एयरोसिटी',           seq:4,  t:'underground',ix:null},
+  {c:'APAPT', en:'Airport Terminal 3',   hi:'एयरपोर्ट टर्मिनल 3',         seq:5,  t:'underground',ix:null},
+  {c:'APDW21',en:'Dwarka Sector 21',     hi:'द्वारका सेक्टर 21',         seq:6,  t:'elevated',   ix:'Blue Line', ixCode:'DW21', term:true},
+];
+
+
+// ── INTERCHANGE MAP (code → shared stations cross-line)
+// format: { blueCode: {violet: violetCode}, violetCode: {blue: blueCode}, ... }
+const CROSS_IX = {
+  // Blue ↔ Violet
+  'MH':   { violet: 'MHV' },
+  'MHV':  { blue:   'MH'  },
+  // Blue ↔ Pink
+  'MV1':  { pink:   'MV1P'},
+  'MV1P': { blue:   'MV1' },
+  'RJG':  { pink:   'RJGP'},
+  'RJGP': { blue:   'RJG' },
+  // Violet ↔ Pink (Lajpat Nagar)
+  'LJP':  { pink:   'LJPP'},
+  'LJPP': { violet: 'LJP' },
+  // Violet ↔ Pink (Kalkaji Mandir)
+  'KGS':  { pink:   'KGSP', magenta: 'MGKM'},
+  'KGSP': { violet: 'KGS', magenta: 'MGKM' },
+  // Yellow ↔ Blue (Rajiv Chowk)
+  'RC':   { yellow: 'RCY' },
+  'RCY':  { blue:   'RC'  },
+  // Yellow ↔ Violet + Red (Kashmere Gate)
+  'KASB': { yellow: 'KASY', red: 'KASR' },
+  'KASY': { violet: 'KASB', red: 'KASR' },
+  'KASR': { yellow: 'KASY', violet: 'KASB' },
+  // Yellow ↔ Pink (Azadpur)
+  'AZP':  { yellow: 'AZDY'},
+  'AZDY': { pink:   'AZP' },
+  // Yellow ↔ Pink (INA)
+  'INA':  { yellow: 'INAY'},
+  'INAY': { pink:   'INA' },
+  // Yellow ↔ Pink (Hauz Khas)
+  'GBN':  { yellow: 'GBNX', magenta: 'MGHK'},
+  'GBNX': { pink:   'GBN', magenta: 'MGHK' },
+  // Red ↔ Pink (Netaji Subhash Place)
+  'NBG':  { red:    'NETPR'},
+  'NETPR':{ pink:   'NBG' },
+  // Red ↔ Green (Inderlok)
+  'INDER':{ green:  'INDRG'},
+  'INDRG':{ red:    'INDER'},
+  // Green ↔ Blue (Kirti Nagar)
+  'KN':   { green:  'KTNRG'},
+  'KTNRG':{ blue:   'KN'   },
+  // Green ↔ Pink (Punjabi Bagh West)
+  'PSN':  { green:  'PBGWG'},
+  'PBGWG':{ pink:   'PSN'  },
+  // Green branch (Ashok Park Main → Kirti Nagar)
+  'ASHKP':{ branch: 'ASHKB'},
+  // Magenta ↔ Blue (Janakpuri West)
+  'JKW':  { magenta: 'MGJW' },
+  'MGJW': { blue:    'JKW'  },
+  // Magenta ↔ Blue (Botanical Garden)
+  'BG':   { magenta: 'MGBG' },
+  'MGBG': { blue:    'BG'   },
+  // Magenta ↔ Pink/Yellow (Hauz Khas)
+  'MGHK': { pink:    'GBN', yellow: 'GBNX' },
+  // Magenta ↔ Violet/Pink (Kalkaji Mandir)
+  'MGKM': { violet:  'KGS', pink: 'KGSP' },
+  // Grey ↔ Blue (Dwarka)
+  'DW':   { grey:    'GRDW' },
+  'GRDW': { blue:    'DW'   },
+  // Airport Express ↔ Yellow (New Delhi)
+  'NGDL': { airport: 'APNGDL' },
+  'APNGDL':{ yellow: 'NGDL' },
+  // Airport Express ↔ Blue (Dwarka Sector 21)
+  'DW21': { airport: 'APDW21' },
+  'APDW21':{ blue:   'DW21' },
+};
+
+// Build lookup maps
+const ALL_STATIONS = [];
+const CODE_MAP = {};
+
+BLUE.forEach(s=>{
+  const obj={...s, line:'blue', lineLabel:'Blue Line', lineColor:'#1565C0'};
+  ALL_STATIONS.push(obj); CODE_MAP[s.c]=obj;
+});
+VIOLET.forEach(s=>{
+  const obj={...s, line:'violet', lineLabel:'Violet Line', lineColor:'#6A0DAD'};
+  ALL_STATIONS.push(obj); CODE_MAP[s.c]=obj;
+});
+PINK.forEach(s=>{
+  const obj={...s, line:'pink', lineLabel:'Pink Line', lineColor:'#E91E8C'};
+  ALL_STATIONS.push(obj); CODE_MAP[s.c]=obj;
+});
+YELLOW.forEach(s=>{
+  const obj={...s, line:'yellow', lineLabel:'Yellow Line', lineColor:'#F6C200'};
+  ALL_STATIONS.push(obj); CODE_MAP[s.c]=obj;
+});
+RED.forEach(s=>{
+  const obj={...s, line:'red-metro', lineLabel:'Red Line', lineColor:'#E53935'};
+  ALL_STATIONS.push(obj); CODE_MAP[s.c]=obj;
+});
+GREEN.forEach(s=>{
+  const obj={...s, line:'green-line', lineLabel:'Green Line', lineColor:'#148A4E'};
+  ALL_STATIONS.push(obj); CODE_MAP[s.c]=obj;
+});
+MAGENTA.forEach(s=>{
+  const obj={...s, line:'magenta', lineLabel:'Magenta Line', lineColor:'#A6267D'};
+  ALL_STATIONS.push(obj); CODE_MAP[s.c]=obj;
+});
+GREY.forEach(s=>{
+  const obj={...s, line:'grey', lineLabel:'Grey Line', lineColor:'#8B8B8B'};
+  ALL_STATIONS.push(obj); CODE_MAP[s.c]=obj;
+});
+AIRPORT.forEach(s=>{
+  const obj={...s, line:'airport', lineLabel:'Airport Express', lineColor:'#F2A900'};
+  ALL_STATIONS.push(obj); CODE_MAP[s.c]=obj;
+});
+
+// Build weighted adjacency graph for Dijkstra
+// Each edge: { to, cost, line }
+// Normal hop = 1, line-change (interchange) = 15 penalty, Airport Express hop = 8
+function buildGraph(){
+  const adj={};
+  function addEdge(a, b, line){
+    if(!adj[a]) adj[a]=[];
+    if(!adj[b]) adj[b]=[];
+    const isAirport = line==='airport';
+    const hopCost = isAirport ? 8 : 1;
+    adj[a].push({to:b, cost:hopCost, line});
+    adj[b].push({to:a, cost:hopCost, line});
+  }
+  function addInterchange(a, b){
+    // interchange edge: zero hop but line-change penalty
+    if(!adj[a]) adj[a]=[];
+    if(!adj[b]) adj[b]=[];
+    adj[a].push({to:b, cost:15, line:'interchange'});
+    adj[b].push({to:a, cost:15, line:'interchange'});
+  }
+  // Blue line chain
+  for(let i=0;i<BLUE.length-1;i++){
+    const a=BLUE[i],b=BLUE[i+1];
+    if(!a.branch && !b.branch) addEdge(a.c,b.c,'blue');
+    else if(a.c==='YMB'||b.c==='YMB') addEdge(a.c,b.c,'blue');
+    else if(a.branch&&b.branch) addEdge(a.c,b.c,'blue');
+  }
+  addEdge('YMB','LXMN','blue');
+  // Other lines
+  for(let i=0;i<VIOLET.length-1;i++) addEdge(VIOLET[i].c,VIOLET[i+1].c,'violet');
+  for(let i=0;i<PINK.length-1;i++) addEdge(PINK[i].c,PINK[i+1].c,'pink');
+  for(let i=0;i<YELLOW.length-1;i++) addEdge(YELLOW[i].c,YELLOW[i+1].c,'yellow');
+  for(let i=0;i<RED.length-1;i++) addEdge(RED[i].c,RED[i+1].c,'red-metro');
+  // Green line
+  addEdge('INDRG','ASHKP','green-line');
+  addEdge('ASHKP','SATGR','green-line');
+  addEdge('SATGR','KTNRG','green-line');
+  addEdge('ASHKP','SHJPR','green-line');
+  addEdge('SHJPR','MADSB','green-line');
+  addEdge('MADSB','PBGWG','green-line');
+  addEdge('PBGWG','ESWRG','green-line');
+  addEdge('ESWRG','PRGHI','green-line');
+  addEdge('PRGHI','UDYNV','green-line');
+  addEdge('UDYNV','SULTN','green-line');
+  addEdge('SULTN','NANGL','green-line');
+  addEdge('NANGL','NANJS','green-line');
+  addEdge('NANJS','RAJDH','green-line');
+  addEdge('RAJDH','MUNDG','green-line');
+  addEdge('MUNDG','MUNIN','green-line');
+  addEdge('MUNIN','GHEVR','green-line');
+  addEdge('GHEVR','TIKRB','green-line');
+  addEdge('TIKRB','TIKRK','green-line');
+  addEdge('TIKRK','PANCH','green-line');
+  addEdge('PANCH','BAHMU','green-line');
+  addEdge('BAHMU','BRIGP','green-line');
+  for(let i=0;i<MAGENTA.length-1;i++) addEdge(MAGENTA[i].c,MAGENTA[i+1].c,'magenta');
+  for(let i=0;i<GREY.length-1;i++) addEdge(GREY[i].c,GREY[i+1].c,'grey');
+  for(let i=0;i<AIRPORT.length-1;i++) addEdge(AIRPORT[i].c,AIRPORT[i+1].c,'airport');
+  // Cross-line interchange edges (with penalty)
+  Object.entries(CROSS_IX).forEach(([a,targets])=>{
+    Object.values(targets).forEach(b=>addInterchange(a,b));
+  });
+  return adj;
+}
+const GRAPH = buildGraph();
+
+// Dijkstra — minimizes weighted cost (penalizes line changes & Airport Express)
+function bfs(from, to){
+  if(from===to) return [from];
+  // priority queue as sorted array: [cost, path]
+  const dist={[from]:0};
+  const pq=[[0,[from]]]; // [cost, path]
+  while(pq.length){
+    pq.sort((a,b)=>a[0]-b[0]);
+    const [cost, path]=pq.shift();
+    const node=path[path.length-1];
+    if(node===to) return path;
+    if(cost > (dist[node]??Infinity)) continue;
+    for(const edge of (GRAPH[node]||[])){
+      const newCost=cost+edge.cost;
+      if(newCost < (dist[edge.to]??Infinity)){
+        dist[edge.to]=newCost;
+        pq.push([newCost,[...path,edge.to]]);
+      }
+    }
+  }
+  return null;
+}
+
+// ── FARE
+function fare(stops){
+  if(stops<=2)return 10; if(stops<=5)return 20; if(stops<=12)return 30;
+  if(stops<=21)return 40; if(stops<=32)return 50; return 60;
+}
+
+// ── PLATFORM INFO
+function platformInfo(fromCode, toCode, line){
+  const from=CODE_MAP[fromCode], to=CODE_MAP[toCode];
+  if(!from||!to) return null;
+  // For cross-line, find forward/backward by seq on that line
+  const fSeq=from.seq, tSeq=to.seq;
+  const fwd = tSeq > fSeq;
+  if(line==='blue'){
+    return {
+      dir_en: fwd?'Towards Dwarka Sector 21':'Towards Noida Electronic City',
+      dir_hi: fwd?'द्वारका सेक्टर 21 की ओर':'नोएडा इलेक्ट्रॉनिक सिटी की ओर',
+      line:'blue'
+    };
+  }
+  if(line==='violet'){
+    return {
+      dir_en: fwd?'Towards Escorts Mujesar':'Towards Kashmere Gate',
+      dir_hi: fwd?'एस्कॉर्ट्स मुजेसर की ओर':'कश्मीरी गेट की ओर',
+      line:'violet'
+    };
+  }
+  if(line==='pink'){
+    return {
+      dir_en: fwd?'Towards Shiv Vihar':'Towards Majlis Park',
+      dir_hi: fwd?'शिव विहार की ओर':'मजलिस पार्क की ओर',
+      line:'pink'
+    };
+  }
+  if(line==='yellow'){
+    return {
+      dir_en: fwd?'Towards Huda City Centre':'Towards Samaypur Badli',
+      dir_hi: fwd?'हुडा सिटी सेंटर की ओर':'समयपुर बादली की ओर',
+      line:'yellow'
+    };
+  }
+  if(line==='red-metro'){
+    return {
+      dir_en: fwd?'Towards Rithala':'Towards Dilshad Garden',
+      dir_hi: fwd?'रिठाला की ओर':'दिलशाद गार्डन की ओर',
+      line:'red-metro'
+    };
+  }
+  if(line==='green-line'){
+    return {
+      dir_en: fwd?'Towards Brigadier Hoshiyar Singh':'Towards Inderlok / Kirti Nagar',
+      dir_hi: fwd?'ब्रिगेडियर होशियार सिंह की ओर':'इंदरलोक / कीर्ति नगर की ओर',
+      line:'green-line'
+    };
+  }
+  if(line==='magenta'){
+    return {
+      dir_en: fwd?'Towards Botanical Garden':'Towards Janakpuri West',
+      dir_hi: fwd?'बॉटेनिकल गार्डन की ओर':'जनकपुरी पश्चिम की ओर',
+      line:'magenta'
+    };
+  }
+  if(line==='grey'){
+    return {
+      dir_en: fwd?'Towards Najafgarh':'Towards Dwarka',
+      dir_hi: fwd?'नजफ़गढ़ की ओर':'द्वारका की ओर',
+      line:'grey'
+    };
+  }
+  if(line==='airport'){
+    return {
+      dir_en: fwd?'Towards Dwarka Sector 21':'Towards New Delhi',
+      dir_hi: fwd?'द्वारका सेक्टर 21 की ओर':'नई दिल्ली की ओर',
+      line:'airport'
+    };
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════════════════
+//  CUSTOM SEARCHABLE DROPDOWN
+// ══════════════════════════════════════════════════════
+let fromCode=null, toCode=null;
+let fromQuery='', toQuery='';
+let activeDropdown=null;
+
+function renderOptions(dropdown, query, excludeCode){
+  dropdown.innerHTML='';
+  const q=query.toLowerCase().trim();
+  const filtered = ALL_STATIONS.filter(s=>{
+    if(s.c===excludeCode) return false;
+    if(!q) return true;
+    return s.en.toLowerCase().includes(q)||s.hi.includes(q)||s.c.toLowerCase().includes(q)||s.line.includes(q)||(s.lineLabel||'').toLowerCase().includes(q);
+  });
+  if(!filtered.length){
+    dropdown.innerHTML='<div class="cs-no-results">No stations found</div>';
+    return;
+  }
+  filtered.forEach((s,idx)=>{
+    const d=document.createElement('div');
+    d.className='cs-option';
+    d.dataset.code=s.c;
+    d.innerHTML=`
+      <span class="line-dot" style="background:${s.lineColor}"></span>
+      <div class="opt-names">
+        <div class="opt-en">${s.en}</div>
+        <div class="opt-hi">${s.hi} <span style="font-size:.65rem;color:${s.lineColor};font-weight:700">${s.lineLabel}</span></div>
+      </div>`;
+    dropdown.appendChild(d);
+  });
+}
+
+function setupDropdown(inputId, dropdownId, isFrom){
+  const input=document.getElementById(inputId);
+  const dd=document.getElementById(dropdownId);
+
+  input.addEventListener('click',()=>{
+    input.removeAttribute('readonly');
+    input.focus();
+    renderOptions(dd, input.value, isFrom?toCode:fromCode);
+    dd.classList.add('open');
+    activeDropdown={input,dd,isFrom};
+  });
+  input.addEventListener('input',()=>{
+    renderOptions(dd, input.value, isFrom?toCode:fromCode);
+    dd.classList.add('open');
+    if(isFrom){fromCode=null;fromQuery=input.value;}
+    else{toCode=null;toQuery=input.value;}
+  });
+  dd.addEventListener('click',e=>{
+    const opt=e.target.closest('.cs-option');
+    if(!opt)return;
+    const code=opt.dataset.code;
+    const s=CODE_MAP[code];
+    if(isFrom){fromCode=code;}else{toCode=code;}
+    input.value=s.en+' ('+s.lineLabel+')';
+    input.setAttribute('readonly','');
+    dd.classList.remove('open');
+  });
+}
+
+setupDropdown('from-input','from-dropdown',true);
+setupDropdown('to-input','to-dropdown',false);
+
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.custom-select-wrap')){
+    document.querySelectorAll('.cs-dropdown').forEach(d=>d.classList.remove('open'));
+    // restore readonly
+    ['from-input','to-input'].forEach(id=>{
+      const inp=document.getElementById(id);
+      const code=id==='from-input'?fromCode:toCode;
+      if(code) inp.setAttribute('readonly',''); else inp.removeAttribute('readonly');
+    });
+  }
+  if(!e.target.closest('.menu-wrap')){
+    document.getElementById('menu-dropdown').classList.remove('open');
+  }
+});
+
+// ══════════════════════════════════════════════════════
+//  HEADER MENU & TICKET INFO MODAL
+// ══════════════════════════════════════════════════════
+function toggleMenu(){
+  document.getElementById('menu-dropdown').classList.toggle('open');
+}
+
+function openTicketModal(){
+  document.getElementById('menu-dropdown').classList.remove('open');
+  document.getElementById('ticket-modal').classList.add('open');
+}
+
+function closeTicketModal(){
+  document.getElementById('ticket-modal').classList.remove('open');
+}
+
+function closeTicketModalOutside(e){
+  if(e.target.id==='ticket-modal') closeTicketModal();
+}
+
+function swapStations(){
+  const tmp=fromCode; fromCode=toCode; toCode=tmp;
+  const finp=document.getElementById('from-input');
+  const tinp=document.getElementById('to-input');
+  const tv=finp.value; finp.value=tinp.value; tinp.value=tv;
+}
+
+// ══════════════════════════════════════════════════════
+//  ROUTE FINDING & RENDERING
+// ══════════════════════════════════════════════════════
+let currentLang='en';
+
+function setLang(l){
+  currentLang=l;
+  document.getElementById('btn-en').classList.toggle('active',l==='en');
+  document.getElementById('btn-hi').classList.toggle('active',l==='hi');
+  document.getElementById('hero-title').textContent=l==='en'?'Find Your Metro Route':'अपना मेट्रो रास्ता खोजें';
+  document.getElementById('hero-sub').textContent=l==='en'?'Find Your Journey • Blue, Violet, Pink, Yellow, Red, Green, Magenta, Grey & Airport Express Lines':'अपना सफ़र खोजें • ब्लू, वायलेट, पिंक, येलो, रेड, ग्रीन, मैजेंटा, ग्रे और एयरपोर्ट एक्सप्रेस लाइन';
+  document.getElementById('lbl-from').textContent=l==='en'?'FROM Station':'स्टेशन से';
+  document.getElementById('lbl-to').textContent=l==='en'?'TO Station':'स्टेशन तक';
+  document.getElementById('btn-text').textContent=l==='en'?'Find Route • रास्ता खोजें':'रास्ता खोजें • Find Route';
+}
+
+function findRoute(){
+  const rw=document.getElementById('result-wrap');
+  if(!fromCode||!toCode){
+    rw.innerHTML='<div class="error-box">⚠️ Please select both FROM and TO stations.</div>';
+    return;
+  }
+  if(fromCode===toCode){
+    rw.innerHTML='<div class="error-box">⚠️ Source and destination cannot be the same.</div>';
+    return;
+  }
+  rw.innerHTML='<div class="loading"><div class="loader"></div><p>Finding best route...</p></div>';
+  setTimeout(()=>_computeRoute(fromCode,toCode,rw),300);
+}
+
+function _computeRoute(fc, tc, rw){
+  const path=bfs(fc,tc);
+  if(!path||!path.length){
+    rw.innerHTML='<div class="error-box">❌ No route found between these stations.</div>';
+    return;
+  }
+
+  // Enrich path
+  const stations=path.map(c=>CODE_MAP[c]).filter(Boolean);
+  const stops=stations.length;
+  const time=((stops-1)*2)+' min';
+  const f='₹'+fare(stops);
+
+  // Detect segments (line changes)
+  const segments=[];
+  let segStart=0;
+  for(let i=1;i<stations.length;i++){
+    if(stations[i].line!==stations[i-1].line){
+      segments.push({line:stations[i-1].line, stations:stations.slice(segStart,i)});
+      segStart=i;
+    }
+  }
+  segments.push({line:stations[stations.length-1].line, stations:stations.slice(segStart)});
+
+  // Build platform info for each segment
+  const platformCards=[];
+  segments.forEach((seg,si)=>{
+    if(seg.stations.length<1)return;
+    const first=seg.stations[0];
+    const last=seg.stations[seg.stations.length-1];
+    const pi=platformInfo(first.c, last.c, seg.line);
+    if(pi) platformCards.push({...pi, at: first, change: si>0});
+  });
+
+  // Render
+  let html='';
+
+  // Info chips
+  html+=`<div class="info-chips">
+    <div class="chip red">🚇 ${stops} Stations</div>
+    <div class="chip green">⏱ ${time}</div>
+    <div class="chip orange">💰 ${f}</div>
+    <div class="chip gold">🔄 ${segments.length-1} Change${segments.length-1!==1?'s':''}</div>
+  </div>`;
+
+  // Timeline
+  html+='<div class="route-title">🗺 Full Route</div>';
+  html+='<div class="timeline">';
+
+  segments.forEach((seg,si)=>{
+    const segLine=seg.line;
+    const segClass=segLine+'-seg';
+    html+=`<div class="timeline-segment"><div class="seg-line ${segClass}"></div>`;
+
+    seg.stations.forEach((s,idx)=>{
+      const isFirst=si===0&&idx===0;
+      const isLast=si===segments.length-1&&idx===seg.stations.length-1;
+      const isIx=!isFirst&&!isLast&&CROSS_IX[s.c]&&idx===0;
+      let cls='stop';
+      if(isFirst) cls+=` first ${segLine}-first`;
+      if(isLast)  cls+=` last ${segLine}-last`;
+      if(isIx)    cls+=' interchange';
+
+      let dotClass='stop-dot '+segLine+'-dot';
+      if(isFirst||isLast) dotClass='stop-dot '+segLine+'-dot';
+      if(isIx) dotClass='stop-dot';
+
+      let badges='';
+      if(s.term)badges+=`<span class="stop-badge badge-terminal">Terminal</span>`;
+      if(s.t==='underground')badges+=`<span class="stop-badge badge-underground">🚇 Underground</span>`;
+      if(s.ix&&!CROSS_IX[s.c]) badges+=`<span class="stop-badge badge-interchange">⇄ ${s.ix}</span>`;
+      if(CROSS_IX[s.c]) badges+=`<span class="stop-badge badge-interchange">⇄ Interchange</span>`;
+      badges+=`<span class="badge-line ${segLine}-badge">${s.lineLabel}</span>`;
+
+      // Inline platform/boarding info — shown at the station where you
+      // need to GO TO A PLATFORM (either to board first, or to change lines)
+      let platformBox='';
+      if(idx===0 && !isLast){
+        const pc=platformCards[si];
+        if(pc){
+          const col=s.lineColor;
+          const label=isFirst?`🚉 Board here — ${s.lineLabel}`:`🔄 Change here to ${s.lineLabel}`;
+          platformBox=`<div class="platform-inline" style="border-color:${col}55;background:${col}12">
+            <div class="pi-num" style="color:${col}">➜</div>
+            <div class="pi-info">
+              <div class="pi-label">${label}</div>
+              <div class="pi-dir">Board the train going ${pc.dir_en}</div>
+              <div class="pi-dir-hi">${pc.dir_hi} वाली ट्रेन में बैठें</div>
+            </div>
+          </div>`;
+        }
+      }
+
+      html+=`<div class="${cls}" style="animation-delay:${idx*0.04}s">
+        <div class="${dotClass}"></div>
+        <div class="stop-content">
+          <div class="stop-name">${s.en}</div>
+          <div class="stop-hindi">${s.hi}</div>
+          <div>${badges}</div>
+          ${platformBox}
+        </div>
+      </div>`;
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+
+  rw.innerHTML=html;
+}
+
+</script>
+</body>
+</html>
