@@ -609,6 +609,28 @@ body{
 @keyframes slideIn{from{opacity:0;transform:translateX(-12px)}to{opacity:1;transform:none}}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
+/* ── BUY TICKET CARDS ── */
+.buy-ticket-card{
+  display:flex;align-items:center;gap:14px;
+  border-radius:14px;padding:14px 16px;
+  text-decoration:none;
+  transition:transform .15s,box-shadow .15s;
+  cursor:pointer;
+}
+.buy-ticket-card:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
+.buy-ticket-card:active{transform:scale(.98)}
+.btc-icon{
+  width:48px;height:48px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.5rem;color:#fff;
+  box-shadow:0 3px 10px rgba(0,0,0,.2);
+}
+.btc-info{flex:1;min-width:0}
+.btc-title{font-size:.95rem;font-weight:800;margin-bottom:2px}
+.btc-desc{font-size:.78rem;color:var(--text-dim);line-height:1.45}
+.btc-hi{font-family:'Noto Sans Devanagari',sans-serif;font-size:.72rem;color:var(--text-dim);margin-top:3px;line-height:1.5}
+.btc-arrow{font-size:1.2rem;color:var(--text-dim);flex-shrink:0;font-weight:700}
+
 /* ── FOOTER ─── */
 .footer{
   text-align:center;padding:24px;font-size:.75rem;color:var(--text-dim);
@@ -979,6 +1001,10 @@ function enterSite(){
 <div class="menu-wrap">
         <button class="menu-btn" onclick="toggleMenu()" id="menu-btn" aria-label="Menu">☰</button>
         <div class="menu-dropdown" id="menu-dropdown">
+          <div class="menu-item" onclick="openBuyTicketModal()">
+            <span class="mi-icon"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQnDDBXWGRb7tCEJ64EwvuC1kFgD03iZPYzWuK6-TkHt98viivunyTJMUw&s=10" alt="Buy Ticket" style="width:22px;height:22px;object-fit:contain;border-radius:5px;vertical-align:middle;"></span>
+            <span class="mi-text">Buy Ticket<span class="mi-hi">टिकट खरीदें</span></span>
+          </div>
           <div class="menu-item" onclick="openTicketModal()">
             <span class="mi-icon">🎫</span>
             <span class="mi-text">Ticket kaise kharidein?<span class="mi-hi">टिकट कैसे खरीदें</span></span>
@@ -1036,6 +1062,55 @@ function enterSite(){
         💡 Tip: Cash counters can have long queues. The QR ticket (via app/UPI) is fastest and the smart card is best for daily commuters due to the fare discount.
         <div class="tt-hi">सुझाव: कैश काउंटर पर लाइन लंबी हो सकती है। QR टिकट (ऐप/UPI से) सबसे तेज़ है, और रोज़ाना सफर करने वालों के लिए छूट की वजह से स्मार्ट कार्ड सबसे बेहतर है।</div>
       </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- BUY TICKET MODAL -->
+<div class="modal-overlay" id="buy-ticket-modal" onclick="closeBuyTicketModalOutside(event)">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title-wrap">
+        <div class="modal-title">🛒 Buy Metro Ticket</div>
+        <div class="modal-sub">मेट्रो टिकट खरीदें — नीचे से तरीका चुनें</div>
+      </div>
+      <button class="modal-close" onclick="closeBuyTicketModal()" aria-label="Close">✕</button>
+    </div>
+    <div class="modal-body" style="display:flex;flex-direction:column;gap:14px;">
+
+      <!-- Option 1: Rapido -->
+      <a href="https://rapido.bike" target="_blank" rel="noopener" class="buy-ticket-card" style="background:linear-gradient(135deg,#FFF3E0,#FFE0B2);border:1.5px solid #FFB74D;" onclick="closeBuyTicketModal()">
+        <div class="btc-icon" style="background:#fff;overflow:hidden;padding:0;"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQGyC3qDu4A81N3mk1HKmoO5YAgmcTlYWDFpK7sBmdqhPvcg563d2wdRyPe&s=10" alt="Rapido" style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></div>
+        <div class="btc-info">
+          <div class="btc-title" style="color:#E65100;">Rapido App</div>
+          <div class="btc-desc">Book your metro ticket via Rapido — fast, easy, cashless</div>
+          <div class="btc-hi">रैपिडो ऐप से मेट्रो टिकट बुक करें — तेज़ और आसान</div>
+        </div>
+        <div class="btc-arrow">→</div>
+      </a>
+
+      <!-- Option 2: Delhi Momentum Sarthi -->
+      <a href="https://play.google.com/store/apps/details?id=com.dmrc.momentum" target="_blank" rel="noopener" class="buy-ticket-card" style="background:linear-gradient(135deg,#E8F5E9,#C8E6C9);border:1.5px solid #66BB6A;" onclick="closeBuyTicketModal()">
+        <div class="btc-icon" style="background:#fff;overflow:hidden;padding:0;"><img src="https://play-lh.googleusercontent.com/17KxWAusWxn90zBvDuYisOlTDVwTJjw3zFdniqfs_lBV4Nrz1fjmSI-CGVq7iIXobC9ADgv50qopzsS-igPK=w600-h300-pc0xffffff-pd" alt="Delhi Momentum" style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></div>
+        <div class="btc-info">
+          <div class="btc-title" style="color:#1B5E20;">Delhi Momentum Sarthi</div>
+          <div class="btc-desc">Official DMRC app — QR tickets, smart card recharge & more</div>
+          <div class="btc-hi">DMRC का आधिकारिक ऐप — QR टिकट, स्मार्ट कार्ड रिचार्ज और बहुत कुछ</div>
+        </div>
+        <div class="btc-arrow">→</div>
+      </a>
+
+      <!-- Option 3: WhatsApp -->
+      <a href="https://wa.me/919650855800?text=Hi%2C%20I%20want%20to%20buy%20a%20Delhi%20Metro%20ticket" target="_blank" rel="noopener" class="buy-ticket-card" style="background:linear-gradient(135deg,#E8F5E9,#d0f0d8);border:1.5px solid #25D366;" onclick="closeBuyTicketModal()">
+        <div class="btc-icon" style="background:#fff;overflow:hidden;padding:0;"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRPTInWux_waFw64FpGr1ve_S8Z2AyfR_Ahky1kfaeo0w&s=10" alt="WhatsApp" style="width:100%;height:100%;object-fit:cover;border-radius:12px;"></div>
+        <div class="btc-info">
+          <div class="btc-title" style="color:#075E54;">Buy via WhatsApp</div>
+          <div class="btc-desc">Chat on WhatsApp +91 96508 55800 — agent will help you buy</div>
+          <div class="btc-hi">WhatsApp पर +91 96508 55800 को मैसेज करें — एजेंट टिकट दिलाएगा</div>
+        </div>
+        <div class="btc-arrow">→</div>
+      </a>
 
     </div>
   </div>
@@ -1892,6 +1967,19 @@ function closeTicketModalOutside(e){
 function openAboutModal(){
   document.getElementById('menu-dropdown').classList.remove('open');
   document.getElementById('about-modal').classList.add('open');
+}
+
+function openBuyTicketModal(){
+  document.getElementById('menu-dropdown').classList.remove('open');
+  document.getElementById('buy-ticket-modal').classList.add('open');
+}
+
+function closeBuyTicketModal(){
+  document.getElementById('buy-ticket-modal').classList.remove('open');
+}
+
+function closeBuyTicketModalOutside(e){
+  if(e.target.id==='buy-ticket-modal') closeBuyTicketModal();
 }
 
 function closeAboutModal(){
