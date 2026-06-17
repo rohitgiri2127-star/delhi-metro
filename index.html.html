@@ -117,6 +117,146 @@ body{
   transition:background .2s;
 }
 .menu-btn:hover{background:rgba(0,0,0,.35)}
+
+/* ── AI ASSISTANT BUTTON ── */
+.ai-btn{
+  width:40px;height:40px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,#4285F4,#0F9D58);
+  border:1px solid rgba(255,255,255,.25);
+  color:#fff;font-size:1.15rem;cursor:pointer;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .2s,box-shadow .2s;
+  box-shadow:0 2px 8px rgba(66,133,244,.4);
+  position:relative;
+}
+.ai-btn:hover{transform:scale(1.1);box-shadow:0 4px 16px rgba(66,133,244,.5);}
+.ai-btn:active{transform:scale(.95);}
+.ai-btn-pulse{
+  position:absolute;width:100%;height:100%;border-radius:10px;
+  border:2px solid rgba(66,133,244,.6);
+  animation:aiBtnPulse 2s ease-in-out infinite;
+}
+@keyframes aiBtnPulse{
+  0%,100%{transform:scale(1);opacity:.7}
+  50%{transform:scale(1.25);opacity:0}
+}
+
+/* ── AI POPUP OVERLAY ── */
+.ai-overlay{
+  position:fixed;inset:0;z-index:2000;
+  background:rgba(10,6,2,.55);
+  backdrop-filter:blur(4px);
+  display:none;align-items:flex-end;justify-content:center;
+  padding:0;
+}
+.ai-overlay.open{display:flex;animation:fadeInOverlay .25s ease both}
+@keyframes fadeInOverlay{from{opacity:0}to{opacity:1}}
+
+.ai-popup{
+  background:linear-gradient(160deg,#1a1a2e 0%,#16213e 50%,#0f3460 100%);
+  border-radius:24px 24px 0 0;
+  width:100%;max-width:480px;
+  padding:0 0 env(safe-area-inset-bottom,0);
+  box-shadow:0 -8px 40px rgba(0,0,0,.5);
+  animation:slideUpPopup .3s cubic-bezier(.34,1.56,.64,1) both;
+  overflow:hidden;
+}
+@keyframes slideUpPopup{
+  from{transform:translateY(100%);opacity:0}
+  to{transform:translateY(0);opacity:1}
+}
+
+/* Drag handle */
+.ai-popup-handle{
+  width:40px;height:4px;border-radius:999px;
+  background:rgba(255,255,255,.2);
+  margin:12px auto 0;
+}
+
+/* Header */
+.ai-popup-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px 10px;
+}
+.ai-popup-title{
+  display:flex;align-items:center;gap:10px;
+}
+.ai-logo{
+  width:34px;height:34px;border-radius:50%;
+  background:linear-gradient(135deg,#4285F4 0%,#34A853 33%,#FBBC05 66%,#EA4335 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1rem;flex-shrink:0;
+  box-shadow:0 2px 8px rgba(66,133,244,.4);
+}
+.ai-title-text{color:#fff;font-size:1rem;font-weight:700;}
+.ai-title-sub{color:rgba(255,255,255,.5);font-size:.7rem;margin-top:1px;}
+.ai-close-btn{
+  width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.7);
+  font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background .2s;
+}
+.ai-close-btn:hover{background:rgba(255,255,255,.2);}
+
+/* Mic area */
+.ai-mic-area{
+  display:flex;flex-direction:column;align-items:center;
+  padding:24px 20px 20px;gap:14px;
+}
+.ai-mic-ring{
+  position:relative;width:88px;height:88px;
+  display:flex;align-items:center;justify-content:center;
+}
+.ai-mic-ring::before,.ai-mic-ring::after{
+  content:'';position:absolute;border-radius:50%;
+  border:2px solid rgba(66,133,244,.3);
+  animation:micRing 2s ease-in-out infinite;
+}
+.ai-mic-ring::before{width:100%;height:100%;animation-delay:0s;}
+.ai-mic-ring::after{width:120%;height:120%;left:-10%;top:-10%;animation-delay:.5s;}
+@keyframes micRing{
+  0%,100%{transform:scale(1);opacity:.5}
+  50%{transform:scale(1.08);opacity:.15}
+}
+.ai-mic-btn{
+  width:72px;height:72px;border-radius:50%;
+  background:linear-gradient(135deg,#4285F4,#1a73e8);
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.8rem;
+  box-shadow:0 4px 20px rgba(66,133,244,.5);
+  transition:transform .15s,box-shadow .15s;
+  position:relative;z-index:1;
+}
+.ai-mic-btn:hover{transform:scale(1.07);box-shadow:0 6px 28px rgba(66,133,244,.65);}
+.ai-mic-btn:active{transform:scale(.95);}
+.ai-mic-text{color:rgba(255,255,255,.7);font-size:.82rem;text-align:center;line-height:1.5;}
+
+/* Quick actions */
+.ai-actions{
+  display:flex;gap:8px;padding:0 20px 20px;flex-wrap:wrap;justify-content:center;
+}
+.ai-action-chip{
+  background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  border-radius:999px;padding:7px 14px;
+  color:rgba(255,255,255,.8);font-size:.75rem;cursor:pointer;
+  transition:background .2s;white-space:nowrap;
+  text-decoration:none;display:inline-block;
+}
+.ai-action-chip:hover{background:rgba(255,255,255,.16);}
+
+/* Google Assistant open btn */
+.ai-open-full{
+  margin:0 20px 24px;
+  display:block;padding:13px;border:none;border-radius:14px;width:calc(100% - 40px);
+  background:linear-gradient(135deg,#4285F4,#1a73e8);
+  color:#fff;font-size:.9rem;font-weight:700;cursor:pointer;
+  letter-spacing:.02em;
+  box-shadow:0 4px 16px rgba(66,133,244,.4);
+  transition:transform .15s,box-shadow .15s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.ai-open-full:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(66,133,244,.5);}
 .menu-dropdown{
   position:absolute;top:calc(100% + 8px);right:0;
   background:var(--card);border:1px solid var(--border);
@@ -832,7 +972,11 @@ function enterSite(){
         <button class="lang-btn active" onclick="setLang('en')" id="btn-en">EN</button>
         <button class="lang-btn" onclick="setLang('hi')" id="btn-hi">हिं</button>
       </div>
-      <div class="menu-wrap">
+      <button class="ai-btn" onclick="openAIPopup()" title="AI Assistant" aria-label="AI Assistant">
+    <span class="ai-btn-pulse"></span>
+    🤖
+  </button>
+<div class="menu-wrap">
         <button class="menu-btn" onclick="toggleMenu()" id="menu-btn" aria-label="Menu">☰</button>
         <div class="menu-dropdown" id="menu-dropdown">
           <div class="menu-item" onclick="openTicketModal()">
@@ -1939,5 +2083,89 @@ function _computeRoute(fc, tc, rw){
 
 
 </script>
+
+<!-- ── AI ASSISTANT POPUP ── -->
+<div class="ai-overlay" id="ai-overlay" onclick="closeAIPopupOutside(event)">
+  <div class="ai-popup" id="ai-popup">
+    <div class="ai-popup-handle"></div>
+    <div class="ai-popup-header">
+      <div class="ai-popup-title">
+        <div class="ai-logo">G</div>
+        <div>
+          <div class="ai-title-text">Google Assistant</div>
+          <div class="ai-title-sub">आपका AI सहायक • Your AI Helper</div>
+        </div>
+      </div>
+      <button class="ai-close-btn" onclick="closeAIPopup()" aria-label="Close">✕</button>
+    </div>
+    <div class="ai-mic-area">
+      <div class="ai-mic-ring">
+        <button class="ai-mic-btn" onclick="launchAssistant()" title="Google Assistant kholein">
+          🎙️
+        </button>
+      </div>
+      <div class="ai-mic-text">
+        Google Assistant kholne ke liye tap karein<br>
+        <span style="color:rgba(255,255,255,.4);font-size:.72rem">गूगल असिस्टेंट खोलने के लिए टैप करें</span>
+      </div>
+    </div>
+    <div class="ai-actions">
+      <a class="ai-action-chip" onclick="launchAssistant()" href="#">🗺 Metro ka rasta</a>
+      <a class="ai-action-chip" onclick="launchAssistant()" href="#">⏱ Train timing</a>
+      <a class="ai-action-chip" onclick="launchAssistant()" href="#">🌤 Aaj ka mausam</a>
+      <a class="ai-action-chip" onclick="launchAssistant()" href="#">📍 Mera location</a>
+    </div>
+    <button class="ai-open-full" onclick="launchAssistant()">
+      🤖 Google Assistant Kholein
+    </button>
+  </div>
+</div>
+
+
+<script>
+// ── AI ASSISTANT POPUP ──
+function openAIPopup(){
+  document.getElementById('ai-overlay').classList.add('open');
+  document.body.style.overflow='hidden';
+}
+function closeAIPopup(){
+  document.getElementById('ai-overlay').classList.remove('open');
+  document.body.style.overflow='';
+}
+function closeAIPopupOutside(e){
+  if(e.target.id==='ai-overlay') closeAIPopup();
+}
+function launchAssistant(){
+  var ua = navigator.userAgent.toLowerCase();
+  if(/android/.test(ua)){
+    // Try Android deep link to Google Assistant app
+    var started = false;
+    var iframe = document.createElement('iframe');
+    iframe.style.display='none';
+    document.body.appendChild(iframe);
+    try {
+      iframe.src = 'intent://com.google.android.googlequicksearchbox/#Intent;scheme=android-app;package=com.google.android.googlequicksearchbox;action=android.intent.action.ASSIST;end';
+      started = true;
+    } catch(err){}
+    setTimeout(function(){
+      document.body.removeChild(iframe);
+      if(!started){
+        window.location.href = 'https://assistant.google.com';
+      }
+    }, 500);
+    // Also try direct scheme
+    window.location.href = 'googleapp://';
+    setTimeout(function(){
+      // If still here, open Google search voice
+      window.location.href = 'https://assistant.google.com';
+    }, 1000);
+  } else {
+    // iOS / Desktop — open in same tab as overlay stays
+    window.open('https://assistant.google.com','_blank');
+  }
+  closeAIPopup();
+}
+</script>
+
 </body>
 </html>
